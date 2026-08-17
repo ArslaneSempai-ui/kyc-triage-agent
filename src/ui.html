@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -170,7 +170,7 @@ const MOTS = {
 };
 const mot = (cle) => MOTS[langue][cle] ?? cle;
 
-let langue = localStorage.getItem("langue") === "en" ? "en" : "fr";
+let langue = localStorage.getItem("langue") === "fr" ? "fr" : "en";
 const t = () => T[langue];
 
 let etat = null;
