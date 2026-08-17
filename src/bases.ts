@@ -14,6 +14,7 @@
  */
 
 import { genererCas } from "./cas.ts";
+import { isMain } from "./cli.ts";
 import { mesurer } from "./mesurer.ts";
 import { REFERENTIEL_SECTORIEL } from "./referentiel.ts";
 import { constantDecision } from "./baselines.ts";
@@ -59,7 +60,7 @@ export function comparer(seuil = 0.7, combien = 400): Comparaison[] {
   ];
 }
 
-if (import.meta.filename === process.argv[1]) {
+if (isMain(import.meta)) {
   console.log("\nAgainst the two constants that bracket the problem\n");
   console.log("                       automated   breaches   files to a human");
   console.log("─".repeat(68));

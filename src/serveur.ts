@@ -1,8 +1,9 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 import {
   demarrer, fileDAttente, traitees, reprendre, reglerSeuil, basculerReferentiel, chiffres,
-  reinitialiser,
+  reinitialiser, brancherPersistance,
 } from "./file.ts";
 import { balayer, mesurer } from "./mesurer.ts";
 import { lireCas } from "./file.ts";
@@ -102,6 +103,16 @@ const serveur = createServer(async (req, res) => {
     // The error reaches the screen rather than a log nobody reads.
     json(res, { erreur: erreur instanceof Error ? erreur.message : String(erreur) }, 500);
   }
+});
+
+/*
+ * Running as a server, the queue is kept on disk so a demonstration survives a restart.
+ * The queue module itself knows nothing about that — see `brancherPersistance`.
+ */
+const FICHIER = new URL("../data/etat.json", import.meta.url).pathname;
+brancherPersistance({
+  lire: () => { try { return readFileSync(FICHIER, "utf8"); } catch { return null; } },
+  ecrire: (contenu) => { mkdirSync(dirname(FICHIER), { recursive: true }); writeFileSync(FICHIER, contenu); },
 });
 
 demarrer(400);

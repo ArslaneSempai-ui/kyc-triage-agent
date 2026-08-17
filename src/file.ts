@@ -8,16 +8,12 @@
  * Nothing leaves the machine. The state fits in one file.
  */
 
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
 import { genererCas } from "./cas.ts";
 import { trier } from "./agent.ts";
 import { REFERENTIEL_SECTORIEL } from "./referentiel.ts";
 import { mesurer } from "./mesurer.ts";
 import type { Cas, Decision } from "./cas.ts";
 import type { Verdict } from "./agent.ts";
-
-const FICHIER = new URL("../data/etat.json", import.meta.url).pathname;
 
 export type Reprise = {
   cas: string;
@@ -35,6 +31,26 @@ type Etat = {
 };
 
 /**
+ * Where the queue is kept, decided by whoever runs it.
+ *
+ * This module used to import `node:fs` and write one file. That made the review queue —
+ * pure in-memory logic apart from two calls — impossible to load anywhere but Node, which
+ * is what blocked the browser build of the hosted demo.
+ *
+ * Injecting the two operations costs six lines and is better design regardless: a review
+ * queue has no business knowing what a filesystem is. The default keeps everything in
+ * memory, which is exactly right for a demo where each visitor gets their own queue and
+ * nothing survives the tab.
+ */
+export type Persistance = { lire(): string | null; ecrire(contenu: string): void };
+
+let persistance: Persistance = { lire: () => null, ecrire: () => {} };
+
+export function brancherPersistance(p: Persistance): void {
+  persistance = p;
+}
+
+/**
  * Une fonction, pas une constante.
  *
  * A shared object gets modified by the first caller and the next one inherits the damage.
@@ -48,15 +64,15 @@ let cas: Cas[] = [];
 export function demarrer(combien = 400): void {
   cas = genererCas(combien);
   try {
-    etat = { ...vide(), ...JSON.parse(readFileSync(FICHIER, "utf8")) };
+    const brut = persistance.lire();
+    etat = brut === null ? vide() : { ...vide(), ...JSON.parse(brut) };
   } catch {
     etat = vide();
   }
 }
 
 function sauver(): void {
-  mkdirSync(dirname(FICHIER), { recursive: true });
-  writeFileSync(FICHIER, JSON.stringify(etat, null, 2));
+  persistance.ecrire(JSON.stringify(etat, null, 2));
 }
 
 const referentiel = () => (etat.referentielActif ? REFERENTIEL_SECTORIEL : undefined);

@@ -12,6 +12,7 @@
  */
 
 import { genererCas } from "./cas.ts";
+import { isMain } from "./cli.ts";
 import { trier, CONSTANTES } from "./agent.ts";
 import type { Constantes } from "./agent.ts";
 import { REFERENTIEL_SECTORIEL } from "./referentiel.ts";
@@ -71,7 +72,7 @@ export function balayer(cas: Cas[], seuils = [0.5, 0.6, 0.7, 0.8, 0.9, 0.95], re
   return seuils.map((s) => mesurer(cas, s, referentiel, k));
 }
 
-if (import.meta.filename === process.argv[1]) {
+if (isMain(import.meta)) {
   const cas = genererCas(400);
   const pc = (x: number) => (x * 100).toFixed(1).padStart(5) + " %";
 

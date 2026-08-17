@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "outDir": "docs/js",
+    "noEmit": false,
+    "strict": true,
+    "skipLibCheck": true,
+    "types": []
+  },
+  "files": ["src/file.ts", "src/mesurer.ts", "src/referentiel.ts", "src/sensibilite.ts", "src/regulations.ts"]
+}

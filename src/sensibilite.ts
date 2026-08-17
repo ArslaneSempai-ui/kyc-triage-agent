@@ -51,6 +51,7 @@
  */
 
 import { genererCas } from "./cas.ts";
+import { isMain } from "./cli.ts";
 import { mesurer } from "./mesurer.ts";
 import { REFERENTIEL_SECTORIEL } from "./referentiel.ts";
 import { CONSTANTES } from "./agent.ts";
@@ -320,7 +321,7 @@ export function balayerErreur(
   });
 }
 
-if (import.meta.filename === process.argv[1]) {
+if (isMain(import.meta)) {
   const jeux = tirages();
   const f = (x: number) => (x < 100 ? x.toFixed(2) : Math.round(x).toLocaleString("en-GB"));
 

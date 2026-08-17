@@ -1,18 +1,26 @@
 # An onboarding triage agent that knows where to stop
 
-An agent applies a bank's onboarding procedure to each client file, cites the clause
-behind every decision, and **hands the file to a human when it isn't confident**.
+An agent applies a bank's onboarding procedure to each client file, cites the clause behind
+every decision, and **hands the file to a human when it isn't confident**.
+
+<!-- figures:finding -->
+**The finding.** Moving the confidence bar was never the expensive lever. The escalations came from one badly informed rule — a flat volume ceiling applied to every sector — and giving the agent sector context took automation from **39.3 %** to **63.0 %**, wasted escalations from 146 to 50, and breaches from 1 to **0**. Dragging the bar had cost breaches for every point it bought.
+<!-- /figures:finding -->
+
+![The review queue](images/queue.png)
+
+```bash
+npm start          # the review queue, on localhost:4500
+npm run mesurer    # the trade-off table below
+npm run sensibilite # which of my own constants decide anything
+npm test           # types, README figures, and 20 tests
+```
 
 Everything runs locally. No API key, no external service, no data leaving the machine.
 
-```
-npm start          # the review queue, on localhost:4500
-npm run mesurer    # the trade-off table below
-npm test
-```
-
 > Every case is **synthetic and generated**, deliberately. A real onboarding file cannot
-> leave a bank, and a demonstration nobody can run proves nothing.
+> leave a bank, and a demonstration nobody can run proves nothing. What that costs is
+> spelled out under [Where every number comes from](#where-every-number-comes-from).
 
 ---
 

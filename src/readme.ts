@@ -31,6 +31,21 @@ const tradeoff = table(
 
 const sans = mesurer(cas, 0.7);
 const avec = mesurer(cas, 0.7, REFERENTIEL_SECTORIEL);
+
+/*
+ * The finding, in the first screenful.
+ *
+ * Generated for the same reason as everything else on the page: a hand-typed headline is
+ * the figure most likely to go stale and the one a reader is most likely to quote back.
+ * This repository already published 54.5 % against a measured 63.0 % once.
+ */
+const finding =
+  `**The finding.** Moving the confidence bar was never the expensive lever. The escalations ` +
+  `came from one badly informed rule — a flat volume ceiling applied to every sector — and ` +
+  `giving the agent sector context took automation from **${pc(sans.tauxAutomatisation)}** to ` +
+  `**${pc(avec.tauxAutomatisation)}**, wasted escalations from ${sans.escaladesInutiles} to ` +
+  `${avec.escaladesInutiles}, and breaches from ${sans.manquements} to **${avec.manquements}**. ` +
+  `Dragging the bar had cost breaches for every point it bought.`;
 const context = table(
   ["", "Handled without a human", "Wasted escalations", "Breaches"],
   [
@@ -157,4 +172,4 @@ const citations = table(
 const provenance = markdown(INVENTORY, table);
 
 emit(new URL("../README.md", import.meta.url).pathname,
-  { tradeoff, context, sensitivity, chosen, failures, margin, baselines, provenance, citations });
+  { finding, tradeoff, context, sensitivity, chosen, failures, margin, baselines, provenance, citations });

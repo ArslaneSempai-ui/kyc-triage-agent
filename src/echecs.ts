@@ -11,6 +11,7 @@
  */
 
 import { genererCas } from "./cas.ts";
+import { isMain } from "./cli.ts";
 import { trier } from "./agent.ts";
 import { REFERENTIEL_SECTORIEL } from "./referentiel.ts";
 import type { Cas, Decision } from "./cas.ts";
@@ -76,7 +77,7 @@ export function decrire(e: Echec, langue: "fr" | "en" = "en"): string {
   return lignes.join("\n");
 }
 
-if (import.meta.filename === process.argv[1]) {
+if (isMain(import.meta)) {
   const echecs = collecter();
   console.log(`\n${echecs.length} wrong decisions out of 400\n`);
 
