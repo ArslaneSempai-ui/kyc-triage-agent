@@ -12,6 +12,7 @@ import { REFERENTIEL_SECTORIEL, PRUDENCE } from "./referentiel.ts";
 import { collecter, forme, decrire } from "./echecs.ts";
 import { balayerErreur } from "./sensibilite.ts";
 import { rate } from "./interval.ts";
+import { comparer as comparerBases } from "./bases.ts";
 import { run as emit, table } from "./figures.ts";
 
 const cas = genererCas(400);
@@ -65,5 +66,15 @@ const margin = `The reference is used at **${(PRUDENCE * 100).toFixed(0)} %** of
   `1 / 1.14 ≈ 0.88, rounded down. It is not chosen by looking at which value makes the results ` +
   `look best — that would be fitting the answer.`;
 
+const baselines = table(
+  ["", "Automated", "Breaches", "Files to a human"],
+  comparerBases().map((c) => [
+    c.nom === "the agent" ? `**${c.nom}**` : c.nom,
+    (c.automatise * 100).toFixed(1) + " %",
+    c.nom === "the agent" ? `**${c.manquements}**` : c.manquements,
+    c.versHumain,
+  ]),
+);
+
 emit(new URL("../README.md", import.meta.url).pathname,
-  { tradeoff, context, sensitivity, failures, margin });
+  { tradeoff, context, sensitivity, failures, margin, baselines });

@@ -109,6 +109,28 @@ the whole argument for making confidence a first-class output instead of a hidde
 
 ---
 
+## Against doing no work at all
+
+"Handles 63 % without a human" — against what? Two constants bracket the problem, and
+both take a line to implement:
+
+<!-- figures:baselines -->
+|  | Automated | Breaches | Files to a human |
+|---|---|---|---|
+| always "escalader" | 0.0 % | 0 | 400 |
+| always "approuver" | 100.0 % | 98 | 0 |
+| **the agent** | 63.0 % | **0** | 148 |
+<!-- /figures:baselines -->
+
+Escalating everything is safe and unaffordable. Approving everything is free and
+indefensible. Beating either one alone is worthless — the claim worth making is holding
+most of the automation of the second while keeping the safety of the first, and it can
+only be read beside both numbers.
+
+Publishing an accuracy without its baseline invites the one question you cannot answer.
+
+---
+
 ## How wrong may the reference be?
 
 The failure gallery traced the single remaining breach to one row of the sector reference

@@ -12,7 +12,8 @@
     "typage": "tsc --noEmit",
     "echecs": "node src/echecs.ts",
     "sensibilite": "node src/sensibilite.ts",
-    "figures": "node src/readme.ts"
+    "figures": "node src/readme.ts",
+    "bases": "node src/bases.ts"
   },
   "engines": {
     "node": ">=24"
