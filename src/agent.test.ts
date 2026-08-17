@@ -1,4 +1,6 @@
 import { test } from "node:test";
+import { readFileSync } from "node:fs";
+import { eprouver } from "./adverses.ts";
 import { INVENTORY, MUST_DECLARE, CITED } from "./inventory.ts";
 import { ALL } from "./regulations.ts";
 import assert from "node:assert/strict";
@@ -182,7 +184,17 @@ test("moving a constant actually reaches the rules", () => {
 
   assert.ok(codes({}).has("R-SANCT"), "the baseline case must trigger the sanctions rule");
   assert.ok(!codes({ seuilSanctionDoute: 0.95 }).has("R-SANCT"), "seuilSanctionDoute is not read");
-  assert.ok(!codes({ seuilSanctionCertain: 0.99 }).has("R-PEP"), "seuilSanctionCertain is not read");
+  /*
+   * `seuilSanctionCertain` no longer decides whether the PEP rule fires — the adversarial
+   * gallery showed that a 0.80 PEP match was being treated as noise, so the rule now fires
+   * from the doubt threshold like the sanctions one. What the certainty threshold still
+   * decides is how *sharp* the finding is, which is what the confidence rests on.
+   */
+  const nettetePep = (k: Partial<Constantes>) =>
+    trier(c, 0.7, REFERENTIEL_SECTORIEL, { ...CONSTANTES, ...k }).regles
+      .find((r) => r.code === "R-PEP")?.nettete;
+  assert.ok(nettetePep({})! > nettetePep({ seuilSanctionCertain: 0.99 })!,
+    "seuilSanctionCertain is not read — it must still decide how sharp a PEP match is");
   assert.ok(!codes({ multipleAnormal: 99 }).has("R-VOL"), "multipleAnormal is not read");
   // Prudence multiplies the norm, so a large value raises the bar and silences the rule.
   // Written the other way round first, which asserted the opposite of what prudence does.
@@ -280,4 +292,66 @@ test("the citation list is what the rules cite, not what the shared file holds",
   );
   assert.equal(CITED.length, firing.size, "the cited list must be exactly the rules that fire");
   assert.ok(CITED.length < ALL.length, "and it must be smaller than the shared file, or nothing was filtered");
+});
+
+/* ── files written to break the agent ── */
+
+test("every gap the adversarial gallery closed stays closed", () => {
+  /*
+   * Eleven of the twelve hand-written attacks are held today. Seven of them were not when
+   * they were written — an empty name screened clean, a zero volume sat below every
+   * ceiling, a PEP at 0.80 was treated as noise, a passport with thirty days left passed.
+   *
+   * Closing them cost 4.7 points of automation, which is the honest price and is stated on
+   * the page. What must not happen is a later change buying that back by quietly
+   * re-opening one, so each case is pinned individually rather than as a count.
+   */
+  for (const r of eprouver()) {
+    if (r.adverse.id === "A-SEUIL") continue; // a limit, not a defect — see below
+    assert.ok(r.tenu,
+      `${r.adverse.id} regressed: expected at least ${r.adverse.attendu}, got ${r.obtenu} — ${r.adverse.attaque}`);
+  }
+});
+
+test("the one attack that still works is the one that cannot be fixed by moving a number", () => {
+  /*
+   * A sanctions match parked just below the threshold gets through, and always will: any
+   * cut has an underside, and lowering it moves the underside rather than removing it.
+   *
+   * The test asserts the failure rather than the fix, so that if somebody "solves" it by
+   * dragging the threshold down, this fails and asks them what they think they achieved.
+   */
+  const seuil = eprouver().find((r) => r.adverse.id === "A-SEUIL")!;
+  assert.equal(seuil.tenu, false,
+    "if this now holds, check it was not 'fixed' by moving the threshold — the case sits one point under whatever it is");
+});
+
+test("the control case escalates, or the gallery is measuring nothing", () => {
+  const net = eprouver().find((r) => r.adverse.id === "A-SANCTION-NETTE")!;
+  assert.equal(net.obtenu, "escalader");
+});
+
+test("no hand-typed automation figure on the page disagrees with the measurement", () => {
+  /*
+   * The generated blocks cannot go stale — `npm run figures --check` fails first. Prose
+   * can, and did: closing the gaps the adversarial gallery found moved automation from
+   * 63 % to 58 %, and three sentences elsewhere on the page went on saying 63 % for a
+   * commit. Exactly the failure this repository exists to complain about, in its own text.
+   *
+   * So any percentage written next to the word "automation" — or inside the phrase
+   * "N % without a human" — is checked against what the code actually produces.
+   */
+  const readme = readFileSync(new URL("../README.md", import.meta.url), "utf8");
+  const measured = mesurer(genererCas(400), 0.7, REFERENTIEL_SECTORIEL).tauxAutomatisation * 100;
+
+  const claims = [
+    ...readme.matchAll(/(\d{1,3}(?:\.\d)?)\s*%\s*(?:of these files|automation|without a human)/gi),
+    ...readme.matchAll(/"Handles\s+(\d{1,3}(?:\.\d)?)\s*%/gi),
+  ].map((m) => Number(m[1]));
+
+  assert.ok(claims.length > 0, "the guard matched nothing — it is guarding nothing");
+  for (const c of claims) {
+    assert.ok(Math.abs(c - measured) < 1,
+      `the page claims ${c} % automation; the code measures ${measured.toFixed(1)} %`);
+  }
 });

@@ -4,7 +4,7 @@ An agent applies a bank's onboarding procedure to each client file, cites the cl
 every decision, and **hands the file to a human when it isn't confident**.
 
 <!-- figures:finding -->
-**The finding.** Moving the confidence bar was never the expensive lever. The escalations came from one badly informed rule — a flat volume ceiling applied to every sector — and giving the agent sector context took automation from **39.3 %** to **63.0 %**, wasted escalations from 146 to 50, and breaches from 1 to **0**. Dragging the bar had cost breaches for every point it bought.
+**The finding.** Moving the confidence bar was never the expensive lever. The escalations came from one badly informed rule — a flat volume ceiling applied to every sector — and giving the agent sector context took automation from **36.0 %** to **58.3 %**, wasted escalations from 159 to 69, and breaches from 1 to **0**. Dragging the bar had cost breaches for every point it bought.
 <!-- /figures:finding -->
 
 **[Try it in your browser →](https://arslanesempai-ui.github.io/kyc-triage-agent/)** — the whole agent runs client-side. Drag the confidence bar and watch the trade-off move. No install, nothing leaves your machine.
@@ -82,10 +82,10 @@ Counting them together hides the only one that matters.
 <!-- figures:tradeoff -->
 | Confidence bar | Handled without a human | Correct | Breaches | Wasted escalations |
 |---|---|---|---|---|
-| 0.50 | 63.0 % | 100.0 % | 0 | 50 |
-| 0.70 | 63.0 % | 100.0 % | 0 | 50 |
-| 0.80 | 58.5 % | 100.0 % | 0 | 68 |
-| 0.90 | 31.0 % | 100.0 % | 0 | 178 |
+| 0.50 | 58.3 % | 98.3 % | 0 | 69 |
+| 0.70 | 58.3 % | 98.3 % | 0 | 69 |
+| 0.80 | 54.3 % | 98.2 % | 0 | 85 |
+| 0.90 | 31.0 % | 96.8 % | 0 | 178 |
 <!-- /figures:tradeoff -->
 
 ### Then the interesting part
@@ -104,8 +104,8 @@ Giving it the sector reference it was missing:
 <!-- figures:context -->
 |  | Handled without a human | Wasted escalations | Breaches |
 |---|---|---|---|
-| Without sector context | 39.3 % | 146 | 1 |
-| **With sector context** | **63.0 %** | **50** | **0** |
+| Without sector context | 36.0 % | 159 | 1 |
+| **With sector context** | **58.3 %** | **69** | **0** |
 <!-- /figures:context -->
 
 **+39 % relative automation, −42 % wasted analyst time, identical regulatory safety** —
@@ -149,9 +149,59 @@ no longer invented is the law they are judged against.
 
 ---
 
+## Files written to break it
+
+The four hundred synthetic cases are a *sample*: they cover what usually turns up, in
+roughly the proportions it turns up in. That is the right shape for measuring a rate and
+exactly the wrong shape for finding the failure that matters, because the failure that
+matters is rare by construction.
+
+So these are written by hand, one per way I could think of to get a file past an agent that
+is trying to stop.
+
+<!-- figures:adversarial -->
+11 of 12 held.
+
+|  | What it attacks | Expected | Got |
+|---|---|---|---|
+| **got through** | a sanctions match parked just below the look-at-it threshold | escalader | **approuver** |
+| held | ownership split so no single holder reaches the 25 % identification threshold | escalader | escalader |
+| held | a volume just under the sector multiple, in a monitored jurisdiction | escalader | escalader |
+| held | a PEP match below the certainty threshold, with nothing else on the file | escalader | escalader |
+| held | an identity document expiring in one month | complement | complement |
+| held | a sector the reference table does not list | escalader | escalader |
+| held | several weak signals, none of which trips a rule on its own | escalader | escalader |
+| held | an empty name with a clean screening score | complement | complement |
+| held | a company whose identified ownership sums to exactly 75 % | complement | complement |
+| held | a high-risk jurisdiction reached through an intermediate one | escalader | escalader |
+| held | a declared annual volume of zero | complement | complement |
+| held | an unambiguous sanctions match — the one case that must never slip | escalader | escalader |
+
+### What still gets through
+
+**A-SEUIL** — expected `escalader`, got `approuver`.
+
+> 0.54 against a 0.55 cut is not a cleaner match than 0.56 — it is the same evidence on the other side of a number I chose. Anyone who can see the threshold can sit under it.
+
+These are not scored as a rate: 12 hand-written cases cannot support one, and the count that held is not the point. The point is that what fails is **named**, and a named failure is something a reviewer can argue about.
+<!-- /figures:adversarial -->
+
+**Seven of these did not hold when they were written.** An empty name screened clean. A
+declared volume of zero sat below every ceiling and above no multiple. A PEP match at 0.80
+was treated as noise while a sanctions match at the same score escalated. A passport with
+thirty days left passed, and lapsed before the relationship was a quarter old. A sector the
+reference table does not list fell back silently to a flat ceiling the sensitivity sweep had
+already flagged as decisive.
+
+Closing them **cost 4.7 points of automation and nineteen more files a week on an analyst's
+desk**, which is the honest price and is why it is written here rather than absorbed into a
+better-looking headline. The agent was more automated because it was looking at less.
+
+---
+
 ## Against doing no work at all
 
-"Handles 63 % without a human" — against what? Two constants bracket the problem, and
+"Handles 58 % without a human" — against what? Two constants bracket the problem, and
 both take a line to implement:
 
 <!-- figures:baselines -->
@@ -159,7 +209,7 @@ both take a line to implement:
 |---|---|---|---|
 | always "escalader" | 0.0 % | 0 | 400 |
 | always "approuver" | 100.0 % | 98 | 0 |
-| **the agent** | 63.0 % | **0** | 148 |
+| **the agent** | 58.3 % | **0** | 167 |
 <!-- /figures:baselines -->
 
 Escalating everything is safe and unaffordable. Approving everything is free and
@@ -194,15 +244,15 @@ Measured over 5 independent draws of 800 files. What no source says about each o
 
 | Constant | In use | Plausible range | Breaches per 800 files, low → high | Verdict |
 |---|---|---|---|---|
-| `seuilSanctionCertain` | 0.85 | 0.70 – 0.98 | 0.0 → 13.8 | **Decides breaches**, and the draws agree where |
-| `seuilSanctionDoute` | 0.55 | 0.30 – 0.80 | 0.0 → 22.8 | **Decides breaches**; the boundary is under the noise |
-| `volumeEleve` | 1,500,000 | 400,000 – 5,000,000 | 0.0 → 20.8 † | **Dormant** — inert here, decisive without the sector table |
-| `multipleAnormal` | 3.50 | 2.00 – 8.00 | 0.0 → 12.0 | **Decides breaches**; the boundary is under the noise |
-| `prudence` | 0.85 | 0.70 – 1.00 | 0.0 → 4.4 | **Decides breaches**; the boundary is under the noise |
+| `seuilSanctionCertain` | 0.85 | 0.70 – 0.98 | 0.0 → 0.0 | No effect on either cost |
+| `seuilSanctionDoute` | 0.55 | 0.30 – 0.80 | 0.0 → 22.6 | **Decides breaches**; the boundary is under the noise |
+| `volumeEleve` | 1,500,000 | 400,000 – 5,000,000 | 0.0 → 19.6 † | **Dormant** — inert here, decisive without the sector table |
+| `multipleAnormal` | 3.50 | 2.00 – 8.00 | 0.0 → 11.4 | **Decides breaches**; the boundary is under the noise |
+| `prudence` | 0.85 | 0.70 – 1.00 | 0.0 → 4.2 | **Decides breaches**; the boundary is under the noise |
 
 † measured with the sector table removed — see the note below.
 
-1 of 5 can be defended with this measurement. 3 cost breaches at the far end of their range in every draw, and no draw agrees with the others on where that starts — they matter, and this measurement cannot tell you where to set them.
+0 of 5 can be defended with this measurement. 3 cost breaches at the far end of their range in every draw, and no draw agrees with the others on where that starts — they matter, and this measurement cannot tell you where to set them.
 <!-- /figures:chosen -->
 
 Two things about the method, both of which I got wrong first.
@@ -232,15 +282,15 @@ asks how approximate it is allowed to be.
 <!-- figures:sensitivity -->
 | Reference error | Breaches | Wasted escalations | Automated |
 |---|---|---|---|
-| -30 % | 0 | 106 | 49.0 % |
-| -20 % | 0 | 74 | 57.0 % |
-| -10 % | 0 | 58 | 61.0 % |
-| -5 % | 0 | 53 | 62.3 % |
-| +0 % | 0 | 50 | 63.0 % |
-| +5 % | 0 | 45 | 64.3 % |
-| +10 % | 0 | 41 | 65.3 % |
-| +20 % | 2 | 36 | 67.0 % |
-| +30 % | 3 | 32 | 68.3 % |
+| -30 % | 0 | 120 | 45.5 % |
+| -20 % | 0 | 91 | 52.8 % |
+| -10 % | 0 | 76 | 56.5 % |
+| -5 % | 0 | 72 | 57.5 % |
+| +0 % | 0 | 69 | 58.3 % |
+| +5 % | 0 | 64 | 59.5 % |
+| +10 % | 0 | 61 | 60.3 % |
+| +20 % | 2 | 56 | 62.0 % |
+| +30 % | 3 | 53 | 63.0 % |
 <!-- /figures:sensitivity -->
 
 The table is not symmetric, and neither is the price. Understating a norm makes the agent
@@ -259,16 +309,16 @@ The sweep above then checked the derivation against outcomes, which is a differe
 ## What it gets wrong
 
 <!-- figures:failures -->
-50 wrong decisions out of 400. Automated decisions are correct 100.0 % of the time, 95 % interval [98–100], n=252.
+73 wrong decisions out of 400. Automated decisions are correct 100.0 % of the time, 95 % interval [98–100], n=233.
 
 | Wrong decisions | Kind · rules that fired |
 |---|---|
+| 8 | escalade evitable · R-PEP |
 | 7 | escalade evitable · R-JURID |
+| 4 | complement rate · R-EXPIR |
 | 4 | escalade evitable · R-JURID+R-PIECE+R-VOL |
 | 4 | escalade evitable · R-PIECE+R-VOL |
-| 2 | escalade evitable · R-JURID+R-PIECE |
-| 2 | escalade evitable · R-JURID+R-NOM+R-VOL |
-| 2 | escalade evitable · R-LISIB+R-PIECE+R-VOL |
+| 3 | escalade evitable · R-LISIB+R-NOM+R-PEP |
 
 **No breach remains.** Every file that had to go to a human went to a human.
 
@@ -353,7 +403,7 @@ synthetic case set a real one.
 What survives is narrower and worth stating exactly: **the discipline is the finding, the
 score is illustration.** That an automated decision should carry a citation, stop where it
 is unsure, and be scored on breaches rather than on accuracy — that holds anywhere. That it
-reaches 63 % automation with no breach holds on my four hundred files.
+reaches 58 % automation with no breach holds on my four hundred files.
 
 ---
 
@@ -410,7 +460,7 @@ its own marking scheme scores 100 % and demonstrates nothing.
 Everything above is measured, and a measurement invites conclusions it does not support.
 The ones this page is most likely to be read as making, and does not:
 
-**Not "63 % of onboarding can be automated."** 63 % of *these* files, under a rule set I
+**Not "58 % of onboarding can be automated."** 58 % of *these* files, under a rule set I
 wrote, against a ground truth I also wrote. The number is a property of the generator as
 much as of the agent. What travels is the shape: a well-informed rule beats a well-tuned
 threshold, and the two are not substitutes.

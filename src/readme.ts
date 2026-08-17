@@ -11,6 +11,7 @@ import { balayer, mesurer } from "./mesurer.ts";
 import { REFERENTIEL_SECTORIEL, PRUDENCE } from "./referentiel.ts";
 import { collecter, forme, decrire } from "./echecs.ts";
 import { trier } from "./agent.ts";
+import { eprouver } from "./adverses.ts";
 import { balayerErreur, bandes, PLAUSIBLE, AVEU, GRAINES, tirages } from "./sensibilite.ts";
 import { rate } from "./interval.ts";
 import { INVENTORY, CITED } from "./inventory.ts";
@@ -139,6 +140,38 @@ const margin = (() => {
     `of those two was ever checked, and the second is closer than the derivation suggested.`;
 })();
 
+/*
+ * The adversarial gallery, generated.
+ *
+ * Written by hand because the failure that matters is rare by construction — a generator
+ * that produced dangerous files often would be a generator nobody believes. Printed as a
+ * table of named cases rather than a rate, because twelve hand-written cases cannot
+ * support one.
+ */
+const adversarial = (() => {
+  const r = eprouver();
+  const held = r.filter((x) => x.tenu).length;
+  const rows = table(
+    ["", "What it attacks", "Expected", "Got"],
+    r.map((x) => [
+      x.tenu ? "held" : "**got through**",
+      x.adverse.attaque,
+      x.adverse.attendu,
+      x.tenu ? x.obtenu : `**${x.obtenu}**`,
+    ]),
+  );
+  const through = r.filter((x) => !x.tenu);
+  const detail = through.map((x) =>
+    `**${x.adverse.id}** — expected \`${x.adverse.attendu}\`, got \`${x.obtenu}\`.\n\n` +
+    `> ${x.adverse.pourquoi.replace(/\s+/g, " ")}`).join("\n\n");
+
+  return `${held} of ${r.length} held.\n\n${rows}\n\n` +
+    (through.length ? `### What still gets through\n\n${detail}\n` : "") +
+    `\nThese are not scored as a rate: ${r.length} hand-written cases cannot support one, and ` +
+    `the count that held is not the point. The point is that what fails is **named**, and a ` +
+    `named failure is something a reviewer can argue about.`;
+})();
+
 const baselines = table(
   ["", "Automated", "Breaches", "Files to a human"],
   comparerBases().map((c) => [
@@ -172,4 +205,4 @@ const citations = table(
 const provenance = markdown(INVENTORY, table);
 
 emit(new URL("../README.md", import.meta.url).pathname,
-  { finding, tradeoff, context, sensitivity, chosen, failures, margin, baselines, provenance, citations });
+  { finding, tradeoff, context, sensitivity, chosen, failures, margin, adversarial, baselines, provenance, citations });

@@ -12,6 +12,14 @@
  */
 import { PAYS_A_RISQUE, PAYS_SOUS_SURVEILLANCE, piecesRequises } from "./cas.js";
 import { MULTIPLE_ANORMAL, netteteVolume, PRUDENCE } from "./referentiel.js";
+/**
+ * How long before expiry a document stops counting as valid.
+ *
+ * Three months. Chosen, like the rest — and unlike the rest it is bounded by something
+ * real: a review cycle a bank can actually run. Below one month the request arrives after
+ * the document has lapsed; above six, every file carries a request.
+ */
+export const MOIS_AVANT_EXPIRATION = 3;
 export const CONSTANTES = {
     seuilSanctionCertain: 0.85,
     seuilSanctionDoute: 0.55,
@@ -22,6 +30,37 @@ export const CONSTANTES = {
 const RANG = { approuver: 0, complement: 1, escalader: 2 };
 function appliquer(c, referentiel, k = CONSTANTES) {
     const regles = [];
+    /*
+     * A file the agent cannot check is not a file that passes.
+     *
+     * Three of these came out of the adversarial gallery and they share one shape: an input
+     * that is absent rather than clean, and that every downstream rule therefore reads as
+     * clean. Screening an empty name returns no match. A declared volume of zero is below
+     * every ceiling and above no multiple. A sector the reference table does not list has no
+     * norm to be abnormal against.
+     *
+     * In each case silence from the rules meant approval, which is the one direction an
+     * absence must never resolve in.
+     */
+    if (c.nom.trim().length === 0) {
+        regles.push({
+            code: "R-IDENT", regulation: "identificationTiming",
+            clause: { fr: "31 CFR 1010.230(a) — l'identification se fait à l'ouverture du compte",
+                en: "31 CFR 1010.230(a) — identification is performed at account opening" },
+            constat: { fr: "Nom déclaré vide : aucun criblage n'a pu être fait",
+                en: "Declared name is empty: no screening could be performed" },
+            impose: "complement", nettete: 1,
+        });
+    }
+    if (c.activite.volumeAnnuelDeclare <= 0) {
+        regles.push({
+            code: "R-VOL0", regulation: null,
+            clause: { fr: "Contrôle interne — une activité déclarée nulle n'est pas une activité à faible risque",
+                en: "Internal control — a declared activity of zero is not a low-risk activity" },
+            constat: { fr: "Volume annuel déclaré : 0", en: "Declared annual volume: 0" },
+            impose: "complement", nettete: 1,
+        });
+    }
     const s = c.criblage.correspondanceSanction;
     if (s >= k.seuilSanctionDoute) {
         regles.push({
@@ -35,15 +74,24 @@ function appliquer(c, referentiel, k = CONSTANTES) {
             nettete: s >= k.seuilSanctionCertain ? 0.95 : (s - k.seuilSanctionDoute) / Math.max(1e-6, k.seuilSanctionCertain - k.seuilSanctionDoute) * 0.5 + 0.2,
         });
     }
+    /*
+     * A PEP is a status, not a score.
+     *
+     * The adversarial gallery put a 0.80 PEP match on an otherwise clean file and the agent
+     * approved it: the rule only fired above the *certainty* threshold, so anything in the
+     * ambiguous band was treated as noise. A sanctions match in that band already escalates
+     * — a politically exposed person in it was worth less attention than a namesake, which
+     * is backwards.
+     */
     const p = c.criblage.correspondancePep;
-    if (p >= k.seuilSanctionCertain) {
+    if (p >= k.seuilSanctionDoute) {
         regles.push({
             code: "R-PEP", regulation: "identificationTiming",
             clause: { fr: "31 CFR 1010.230(a) — l'identification se fait à l'ouverture du compte",
                 en: "31 CFR 1010.230(a) — identification is performed at account opening" },
             constat: { fr: `Correspondance PPE à ${p.toFixed(2)}`, en: `PEP match at ${p.toFixed(2)}` },
             impose: "escalader",
-            nettete: 0.9,
+            nettete: p >= k.seuilSanctionCertain ? 0.9 : 0.45,
         });
     }
     if (PAYS_A_RISQUE.has(c.paysResidence)) {
@@ -88,12 +136,22 @@ function appliquer(c, referentiel, k = CONSTANTES) {
                 nettete: 0.7,
             });
         }
-        if (piece.expireDans !== null && piece.expireDans <= 0) {
+        /*
+         * Expiring counts, not only expired.
+         *
+         * The rule asked whether a document had already lapsed. A passport with thirty days
+         * left passed today and lapsed before the relationship was a quarter old — which the
+         * bank then discovers from the customer, or not at all.
+         */
+        if (piece.expireDans !== null && piece.expireDans <= MOIS_AVANT_EXPIRATION) {
             regles.push({
                 code: "R-EXPIR", regulation: null, clause: { fr: "Contrôle interne — une pièce d'identité expirée n'est pas recevable",
                     en: "Internal control — an expired identity document is not acceptable" },
-                constat: { fr: `${attendue} expirée depuis ${Math.abs(piece.expireDans)} mois`,
-                    en: `${attendue} expired ${Math.abs(piece.expireDans)} months ago` },
+                constat: piece.expireDans <= 0
+                    ? { fr: `${attendue} expirée depuis ${Math.abs(piece.expireDans)} mois`,
+                        en: `${attendue} expired ${Math.abs(piece.expireDans)} months ago` }
+                    : { fr: `${attendue} expire dans ${piece.expireDans} mois`,
+                        en: `${attendue} expires in ${piece.expireDans} months` },
                 impose: "complement", nettete: 1,
             });
         }
@@ -108,6 +166,8 @@ function appliquer(c, referentiel, k = CONSTANTES) {
     if (c.type === "societe") {
         const couvert = c.beneficiaires.filter((b) => b.identifie).reduce((s2, b) => s2 + b.part, 0);
         const gros = c.beneficiaires.filter((b) => b.part >= 25 && !b.identifie);
+        /* Unidentified holders sitting in the band just below the threshold. */
+        const grappe = c.beneficiaires.filter((b) => !b.identifie && b.part >= 15 && b.part < 25);
         if (gros.length > 0) {
             regles.push({
                 code: "R-BE25", regulation: "beneficialOwnership", clause: { fr: "31 CFR 1010.230(d)(1) — tout détenteur de 25 % ou plus du capital est identifié",
@@ -115,6 +175,28 @@ function appliquer(c, referentiel, k = CONSTANTES) {
                 constat: { fr: `${gros.length} bénéficiaire(s) au-dessus de 25 % non identifié(s)`,
                     en: `${gros.length} beneficial owner(s) above 25 % not identified` },
                 impose: "complement", nettete: 1,
+            });
+        }
+        else if (grappe.length >= 3 && grappe.reduce((t, b) => t + b.part, 0) >= 50) {
+            /*
+             * Several unidentified holders clustered just under the identification threshold.
+             *
+             * Four holders at 24 % each is 96 % of a company owned by nobody the bank has seen,
+             * and no single holder trips `(d)(1)`. The agent used to ask for the documents and
+             * move on, which is the right first move for an oversight and the wrong one for a
+             * pattern: ownership arranged to sit under a threshold is the same manoeuvre as
+             * amounts arranged to sit under a reporting threshold.
+             *
+             * It cannot tell a deliberate split from four genuine equal partners — and neither
+             * can a document request. That is what a human is for.
+             */
+            regles.push({
+                code: "R-BEGRAPPE", regulation: "beneficialOwnership",
+                clause: { fr: "31 CFR 1010.230(d)(1) — tout détenteur de 25 % ou plus du capital est identifié",
+                    en: "31 CFR 1010.230(d)(1) — every holder of 25 % or more of the equity is identified" },
+                constat: { fr: `${grappe.length} détenteurs non identifiés juste sous 25 %, ${grappe.reduce((t, b) => t + b.part, 0)} % au total`,
+                    en: `${grappe.length} unidentified holders just under 25 %, ${grappe.reduce((t, b) => t + b.part, 0)} % between them` },
+                impose: "escalader", nettete: 0.75,
             });
         }
         else if (couvert < 75) {
@@ -130,6 +212,22 @@ function appliquer(c, referentiel, k = CONSTANTES) {
     // Every comparison against the reference takes the margin: the table is known to be
     // wrong in both directions, and only one of them is cheap.
     const normeBrute = referentiel?.get(c.activite.secteur);
+    /*
+     * A sector the table does not list is a gap in the data, and the sweep already said the
+     * flat ceiling decides a great deal whenever that happens. Rather than fall back to it
+     * silently, the agent says it has no basis for judging — at low sharpness, so the
+     * confidence carries the ignorance rather than the decision.
+     */
+    if (referentiel !== undefined && normeBrute === undefined) {
+        regles.push({
+            code: "R-SECT", regulation: null,
+            clause: { fr: "Contrôle interne — un secteur absent du référentiel ne peut pas être jugé sur son volume",
+                en: "Internal control — a sector missing from the reference cannot be judged on volume" },
+            constat: { fr: `Secteur hors référentiel : « ${c.activite.secteur} »`,
+                en: `Sector not in the reference: “${c.activite.secteur}”` },
+            impose: "escalader", nettete: 0.3,
+        });
+    }
     const norme = normeBrute === undefined ? undefined : normeBrute * k.prudence;
     if (norme === undefined) {
         // With no reference table the agent cannot tell whether this volume is abnormal or
