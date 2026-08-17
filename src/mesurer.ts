@@ -12,7 +12,8 @@
  */
 
 import { genererCas } from "./cas.ts";
-import { trier } from "./agent.ts";
+import { trier, CONSTANTES } from "./agent.ts";
+import type { Constantes } from "./agent.ts";
 import { REFERENTIEL_SECTORIEL } from "./referentiel.ts";
 import type { Referentiel } from "./referentiel.ts";
 import type { Cas, Decision } from "./cas.ts";
@@ -33,7 +34,7 @@ export type Bilan = {
   parDecision: Record<Decision, { attendu: number; obtenu: number; justes: number }>;
 };
 
-export function mesurer(cas: Cas[], seuil: number, referentiel?: Referentiel): Bilan {
+export function mesurer(cas: Cas[], seuil: number, referentiel?: Referentiel, k: Constantes = CONSTANTES): Bilan {
   const vide = () => ({ attendu: 0, obtenu: 0, justes: 0 });
   const parDecision: Bilan["parDecision"] = {
     approuver: vide(), complement: vide(), escalader: vide(),
@@ -42,7 +43,7 @@ export function mesurer(cas: Cas[], seuil: number, referentiel?: Referentiel): B
   let automatises = 0, justesAutomatises = 0, manquements = 0, escaladesInutiles = 0;
 
   for (const c of cas) {
-    const v = trier(c, seuil, referentiel);
+    const v = trier(c, seuil, referentiel, k);
     parDecision[c.verite].attendu++;
     parDecision[v.decision].obtenu++;
     if (v.decision === c.verite) parDecision[c.verite].justes++;
@@ -66,8 +67,8 @@ export function mesurer(cas: Cas[], seuil: number, referentiel?: Referentiel): B
 }
 
 /** Le compromis, seuil par seuil. C'est la seule sortie qui mérite d'être publiée. */
-export function balayer(cas: Cas[], seuils = [0.5, 0.6, 0.7, 0.8, 0.9, 0.95], referentiel?: Referentiel): Bilan[] {
-  return seuils.map((s) => mesurer(cas, s, referentiel));
+export function balayer(cas: Cas[], seuils = [0.5, 0.6, 0.7, 0.8, 0.9, 0.95], referentiel?: Referentiel, k: Constantes = CONSTANTES): Bilan[] {
+  return seuils.map((s) => mesurer(cas, s, referentiel, k));
 }
 
 if (import.meta.filename === process.argv[1]) {

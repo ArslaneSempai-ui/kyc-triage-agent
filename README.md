@@ -164,6 +164,58 @@ Publishing an accuracy without its baseline invites the one question you cannot 
 
 ---
 
+## Which of my own numbers decide the outcome
+
+Five constants in this repository have no authority behind them. No regulation says where
+a screening match becomes certain, what multiple of a sector norm is abnormal, or how much
+margin to take against a reference table known to be approximate. I chose all five by
+judgement, and a portfolio piece that publishes results without saying which judgements
+they rest on is asking to be taken on trust.
+
+So each one is swept across the range a competent person could disagree with me over, and
+judged on **breaches** — files decided alone that had to go to a human. That is the error
+with a fine attached; wasted escalations are analyst time.
+
+<!-- figures:chosen -->
+Measured over 5 independent draws of 800 files. What no source says about each of them:
+
+- `seuilSanctionCertain` — no regulation says where a screening match becomes certain
+- `seuilSanctionDoute` — nor where it becomes worth a second look
+- `volumeEleve` — a flat ceiling, used only where no sector reference exists
+- `multipleAnormal` — no source defines an abnormal multiple of a sector norm
+- `prudence` — derived from the largest observed reference error, not from the outcome
+
+| Constant | In use | Plausible range | Breaches per 800 files, low → high | Verdict |
+|---|---|---|---|---|
+| `seuilSanctionCertain` | 0.85 | 0.70 – 0.98 | 0.0 → 13.8 | **Decides breaches**, and the draws agree where |
+| `seuilSanctionDoute` | 0.55 | 0.30 – 0.80 | 0.0 → 22.8 | **Decides breaches**; the boundary is under the noise |
+| `volumeEleve` | 1,500,000 | 400,000 – 5,000,000 | 0.0 → 20.8 † | **Dormant** — inert here, decisive without the sector table |
+| `multipleAnormal` | 3.50 | 2.00 – 8.00 | 0.0 → 12.0 | **Decides breaches**; the boundary is under the noise |
+| `prudence` | 0.85 | 0.70 – 1.00 | 0.0 → 4.4 | **Decides breaches**; the boundary is under the noise |
+
+† measured with the sector table removed — see the note below.
+
+1 of 5 can be defended with this measurement. 3 cost breaches at the far end of their range in every draw, and no draw agrees with the others on where that starts — they matter, and this measurement cannot tell you where to set them.
+<!-- /figures:chosen -->
+
+Two things about the method, both of which I got wrong first.
+
+**One draw cannot tell a threshold from a coincidence.** The first version swept a single
+sample and reported four of five constants as decisive — every one of them on a move from
+0 breaches to 1 in 1,200 files. A different seed puts that edge somewhere else. Five
+independent draws, and the question splits in two: *does it cost?* and *where does it start
+costing?* Three constants answer yes and don't know, which is awkward and true.
+
+**Inert is not the same as irrelevant.** `volumeEleve` came back "no effect" because the
+check meant to run it without a sector reference passed `undefined` to a parameter whose
+default *was* the reference — so every dormancy check silently ran with the table. Removing
+the table moves that constant from none to more than twenty breaches per 800 files, the
+figure marked † above. The tool was telling a
+reader to ignore the one number they would need the moment their reference data had a hole
+in it. It is `sensibilite.ts` and a test that guard it now.
+
+---
+
 ## How wrong may the reference be?
 
 The failure gallery traced the single remaining breach to one row of the sector reference
@@ -191,6 +243,8 @@ producing the only error that carries a fine.
 
 <!-- figures:margin -->
 The reference is used at **85 %** of its stated values. That margin is derived from the largest overstatement in the table (+14 %, on crypto-assets): 1 / 1.14 ≈ 0.88, rounded down. It is not chosen by looking at which value makes the results look best — that would be fitting the answer.
+
+The sweep above then checked the derivation against outcomes, which is a different question. No draw loses a file anywhere below **0.88**, and the value in use is 0.85. The derivation landed inside the safe band with 0.03 to spare out of a range 0.30 wide — and that edge is one only 1 of 5 draws can see, so the headroom is smaller than the resolution of the thing measuring it. Derived honestly is not the same as derived safely; only the first of those two was ever checked, and the second is closer than the derivation suggested.
 <!-- /figures:margin -->
 
 ---

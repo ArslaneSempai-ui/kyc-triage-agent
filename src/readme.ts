@@ -10,7 +10,7 @@ import { genererCas } from "./cas.ts";
 import { balayer, mesurer } from "./mesurer.ts";
 import { REFERENTIEL_SECTORIEL, PRUDENCE } from "./referentiel.ts";
 import { collecter, forme, decrire } from "./echecs.ts";
-import { balayerErreur } from "./sensibilite.ts";
+import { balayerErreur, bandes, PLAUSIBLE, AVEU, GRAINES, tirages } from "./sensibilite.ts";
 import { rate } from "./interval.ts";
 import { REGULATIONS, ALL } from "./regulations.ts";
 import { comparer as comparerBases } from "./bases.ts";
@@ -62,10 +62,65 @@ const failures = (() => {
       : `The breach${breaches.length > 1 ? "es" : ""}, in full:\n\n` + examples);
 })();
 
-const margin = `The reference is used at **${(PRUDENCE * 100).toFixed(0)} %** of its stated values. ` +
-  `That margin is derived from the largest overstatement in the table (+14 %, on crypto-assets): ` +
-  `1 / 1.14 ≈ 0.88, rounded down. It is not chosen by looking at which value makes the results ` +
-  `look best — that would be fitting the answer.`;
+/*
+ * The five constants that are mine, and what the sweep makes of them.
+ *
+ * This is the block I would least like a reviewer to write for me, which is the reason it
+ * is generated rather than described. Three of the five matter and cannot be located by
+ * this measurement; saying so costs nothing except the appearance of rigour I did not
+ * have.
+ */
+const chosen = (() => {
+  const bs = bandes(tirages());
+  const f = (x: number) => (x < 100 ? x.toFixed(2) : Math.round(x).toLocaleString("en-GB"));
+  const verdict: Record<string, string> = {
+    "décide les manquements": "**Decides breaches**, and the draws agree where",
+    "décide, frontière sous le bruit": "**Decides breaches**; the boundary is under the noise",
+    "ne coûte que du temps analyste": "Costs analyst time only",
+    "dormant derrière le référentiel": "**Dormant** — inert here, decisive without the sector table",
+    "sans effet": "No effect on either cost",
+  };
+  const t = table(
+    ["Constant", "In use", "Plausible range", `Breaches per ${800} files, low → high`, "Verdict"],
+    bs.map((b) => [
+      "`" + b.reglage + "`", f(b.valeur),
+      f(PLAUSIBLE[b.reglage][0]) + " – " + f(PLAUSIBLE[b.reglage][1]),
+      // A dormant constant's figure in the published configuration is 0.0 → 0.0, which
+      // beside the word "decisive" reads as a contradiction. Show the one that makes the
+      // verdict legible, marked for what it is.
+      b.verdict === "dormant derrière le référentiel"
+        ? b.auxExtremesSansTable[0].toFixed(1) + " → " + b.auxExtremesSansTable[1].toFixed(1) + " †"
+        : b.auxExtremes[0].toFixed(1) + " → " + b.auxExtremes[1].toFixed(1),
+      verdict[b.verdict],
+    ]),
+  );
+  const solides = bs.filter((b) => b.verdict === "décide les manquements").length;
+  const flous = bs.filter((b) => b.verdict === "décide, frontière sous le bruit").length;
+  return `Measured over ${GRAINES.length} independent draws of 800 files. What no source says ` +
+    `about each of them:\n\n` +
+    bs.map((b) => `- \`${b.reglage}\` — ${AVEU[b.reglage]}`).join("\n") +
+    `\n\n${t}\n\n` +
+    `† measured with the sector table removed — see the note below.\n\n` +
+    `${solides} of ${bs.length} can be defended with this measurement. ${flous} cost breaches at the ` +
+    `far end of their range in every draw, and no draw agrees with the others on where that starts — ` +
+    `they matter, and this measurement cannot tell you where to set them.`;
+})();
+
+const margin = (() => {
+  const b = bandes(tirages()).find((x) => x.reglage === "prudence")!;
+  return `The reference is used at **${(PRUDENCE * 100).toFixed(0)} %** of its stated values. ` +
+    `That margin is derived from the largest overstatement in the table (+14 %, on crypto-assets): ` +
+    `1 / 1.14 ≈ 0.88, rounded down. It is not chosen by looking at which value makes the results ` +
+    `look best — that would be fitting the answer.\n\n` +
+    `The sweep above then checked the derivation against outcomes, which is a different question. ` +
+    `No draw loses a file anywhere below **${b.deManquements[1].toFixed(2)}**, and the value in use ` +
+    `is ${PRUDENCE.toFixed(2)}. The derivation landed inside the safe band with ` +
+    `${(b.deManquements[1] - PRUDENCE).toFixed(2)} to spare out of a range ` +
+    `${(PLAUSIBLE.prudence[1] - PLAUSIBLE.prudence[0]).toFixed(2)} wide — and that edge is one only ` +
+    `${b.accord} of ${GRAINES.length} draws can see, so the headroom is smaller than the resolution ` +
+    `of the thing measuring it. Derived honestly is not the same as derived safely; only the first ` +
+    `of those two was ever checked, and the second is closer than the derivation suggested.`;
+})();
 
 const baselines = table(
   ["", "Automated", "Breaches", "Files to a human"],
@@ -91,4 +146,4 @@ const citations = table(
 );
 
 emit(new URL("../README.md", import.meta.url).pathname,
-  { tradeoff, context, sensitivity, failures, margin, baselines, citations });
+  { tradeoff, context, sensitivity, chosen, failures, margin, baselines, citations });

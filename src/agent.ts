@@ -62,18 +62,48 @@ export type Verdict = {
   regles: Regle[];
 };
 
-const SEUIL_SANCTION_CERTAIN = 0.85;
-const SEUIL_SANCTION_DOUTE = 0.55;
-/** L'agent ne connaît pas les usages par secteur. Il applique un plafond unique. */
-const VOLUME_ELEVE = 1_500_000;
+/**
+ * The numbers in this agent that are mine and nobody else's.
+ *
+ * None of them is imposed by any regulation. A sanctions match is a number between 0 and 1
+ * produced by whatever screening engine a bank runs, and where to cut it is the bank's
+ * decision. What counts as an abnormal multiple of a sector norm is nobody's published
+ * figure. I chose all five by judgement.
+ *
+ * They are a parameter rather than five module constants for one reason: the sweep in
+ * `sensibilite.ts` has to be able to move them and report which of them the results
+ * actually rest on. A constant chosen by judgement that turns out to decide nothing is
+ * fine; one that decides the outcome needs a better reason than my judgement, and until
+ * they could be moved there was no way to tell the two apart.
+ */
+export type Constantes = {
+  /** Above this, a screening match is treated as unambiguous. */
+  seuilSanctionCertain: number;
+  /** Below this, a screening match is not looked at at all. */
+  seuilSanctionDoute: number;
+  /** The flat ceiling used only where no sector reference is available. */
+  volumeEleve: number;
+  /** Multiple of the sector norm above which a declared volume is examined. */
+  multipleAnormal: number;
+  /** The margin taken against the reference table being wrong — see `referentiel.ts`. */
+  prudence: number;
+};
+
+export const CONSTANTES: Constantes = {
+  seuilSanctionCertain: 0.85,
+  seuilSanctionDoute: 0.55,
+  volumeEleve: 1_500_000,
+  multipleAnormal: MULTIPLE_ANORMAL,
+  prudence: PRUDENCE,
+};
 
 const RANG: Record<Decision, number> = { approuver: 0, complement: 1, escalader: 2 };
 
-function appliquer(c: Cas, referentiel?: Referentiel): Regle[] {
+function appliquer(c: Cas, referentiel?: Referentiel, k: Constantes = CONSTANTES): Regle[] {
   const regles: Regle[] = [];
 
   const s = c.criblage.correspondanceSanction;
-  if (s >= SEUIL_SANCTION_DOUTE) {
+  if (s >= k.seuilSanctionDoute) {
     regles.push({
       code: "R-SANCT", regulation: "sarThreshold",
       clause: { fr: "31 CFR 1020.320(a)(2) — une opération suspecte de 5 000 $ ou plus est déclarée",
@@ -82,12 +112,12 @@ function appliquer(c: Cas, referentiel?: Referentiel): Regle[] {
                  en: `Sanctions-list match at ${s.toFixed(2)}` },
       impose: "escalader",
       // Nette aux extrêmes, floue au milieu : c'est la zone des homonymes.
-      nettete: s >= SEUIL_SANCTION_CERTAIN ? 0.95 : (s - SEUIL_SANCTION_DOUTE) / (SEUIL_SANCTION_CERTAIN - SEUIL_SANCTION_DOUTE) * 0.5 + 0.2,
+      nettete: s >= k.seuilSanctionCertain ? 0.95 : (s - k.seuilSanctionDoute) / Math.max(1e-6, k.seuilSanctionCertain - k.seuilSanctionDoute) * 0.5 + 0.2,
     });
   }
 
   const p = c.criblage.correspondancePep;
-  if (p >= SEUIL_SANCTION_CERTAIN) {
+  if (p >= k.seuilSanctionCertain) {
     regles.push({
       code: "R-PEP", regulation: "identificationTiming",
       clause: { fr: "31 CFR 1010.230(a) — l'identification se fait à l'ouverture du compte",
@@ -185,12 +215,12 @@ function appliquer(c: Cas, referentiel?: Referentiel): Regle[] {
   // Every comparison against the reference takes the margin: the table is known to be
   // wrong in both directions, and only one of them is cheap.
   const normeBrute = referentiel?.get(c.activite.secteur);
-  const norme = normeBrute === undefined ? undefined : normeBrute * PRUDENCE;
+  const norme = normeBrute === undefined ? undefined : normeBrute * k.prudence;
   if (norme === undefined) {
     // Sans référentiel, l'agent ne sait pas si ce volume est anormal ou banal pour ce
     // métier. Il le signale quand même, et le dit avec une netteté faible : c'est la
     // confiance qui doit porter l'ignorance, pas la décision.
-    if (volume > VOLUME_ELEVE) {
+    if (volume > k.volumeEleve) {
       regles.push({
         code: "R-VOL", regulation: "currencyReport",
         clause: { fr: "31 CFR 1010.311 — les opérations en espèces au-delà de 10 000 $ sont déclarées",
@@ -202,14 +232,14 @@ function appliquer(c: Cas, referentiel?: Referentiel): Regle[] {
     }
   } else {
     const rapport = volume / norme;
-    if (rapport >= MULTIPLE_ANORMAL) {
+    if (rapport >= k.multipleAnormal) {
       regles.push({
         code: "R-VOL", regulation: "currencyReport",
         clause: { fr: "31 CFR 1010.311 — les opérations en espèces au-delà de 10 000 $ sont déclarées",
                   en: "31 CFR 1010.311 — currency transactions above $10,000 are reported" },
         constat: { fr: `${volume.toLocaleString("fr-FR")} € déclarés, soit ${rapport.toFixed(1)}× l'usage du secteur « ${c.activite.secteur} »`,
                    en: `€${volume.toLocaleString("en-GB")} declared, ${rapport.toFixed(1)}× the norm for “${c.activite.secteur}”` },
-        impose: "escalader", nettete: netteteVolume(rapport),
+        impose: "escalader", nettete: netteteVolume(rapport, k.multipleAnormal),
       });
     }
   }
@@ -228,10 +258,10 @@ function appliquer(c: Cas, referentiel?: Referentiel): Regle[] {
    * both directions the moment sectors differ.
    */
   const surveilles = c.activite.paysOperation.filter((x) => PAYS_SOUS_SURVEILLANCE.has(x));
-  const normeSecteur = normeBrute === undefined ? undefined : normeBrute * PRUDENCE;
+  const normeSecteur = normeBrute === undefined ? undefined : normeBrute * k.prudence;
   const volumeSignificatif = normeSecteur !== undefined
     ? c.activite.volumeAnnuelDeclare > normeSecteur * 2
-    : c.activite.volumeAnnuelDeclare > VOLUME_ELEVE / 2;
+    : c.activite.volumeAnnuelDeclare > k.volumeEleve / 2;
 
   if (surveilles.length > 0 && volumeSignificatif) {
     regles.push({
@@ -278,8 +308,8 @@ function confiance(regles: Regle[], decision: Decision): number {
  * `seuil` est la frontière humaine : en dessous, l'agent ne tranche pas. C'est le seul
  * réglage qui compte, et il appartient au métier, pas à celui qui écrit le code.
  */
-export function trier(c: Cas, seuil = 0.7, referentiel?: Referentiel): Verdict {
-  const regles = appliquer(c, referentiel);
+export function trier(c: Cas, seuil = 0.7, referentiel?: Referentiel, k: Constantes = CONSTANTES): Verdict {
+  const regles = appliquer(c, referentiel, k);
 
   // La décision la plus grave l'emporte. Réclamer une pièce à quelqu'un qui ressort
   // d'une liste de sanctions revient à l'avertir.

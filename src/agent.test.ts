@@ -1,7 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { genererCas } from "./cas.ts";
-import { trier } from "./agent.ts";
+import { trier, CONSTANTES } from "./agent.ts";
+import { PLAUSIBLE, materiel } from "./sensibilite.ts";
+import type { Constantes } from "./agent.ts";
 import { REGULATIONS } from "./regulations.ts";
 import { REFERENTIEL_SECTORIEL, netteteVolume, MULTIPLE_ANORMAL } from "./referentiel.ts";
 import { mesurer } from "./mesurer.ts";
@@ -155,5 +157,79 @@ test("every cited regulation carries its source and the date it was retrieved", 
     assert.match(r.source, /^https:\/\//, `${key} has no source a reader can open`);
     assert.match(r.retrieved, /^\d{4}-\d{2}-\d{2}$/, `${key} has no retrieval date`);
     assert.ok(r.says.length > 30, `${key} does not say what it requires`);
+  }
+});
+
+/* ── the constants I chose myself, and the sweep that judges them ── */
+
+test("moving a constant actually reaches the rules", () => {
+  /*
+   * The five constants became a parameter so the sensitivity sweep could move them. If
+   * one of them ever stops being read — a refactor closing over the module default
+   * instead of the argument — the sweep keeps running and reports "no effect" on a
+   * constant it is simply no longer able to move. That failure is silent, and it is
+   * flattering, so it gets a test.
+   */
+  const c = base();
+  c.criblage.correspondanceSanction = 0.60;
+  c.criblage.correspondancePep = 0.90;
+  c.activite.volumeAnnuelDeclare = 9_000_000;
+
+  const codes = (k: Partial<Constantes>) =>
+    new Set(trier(c, 0.7, REFERENTIEL_SECTORIEL, { ...CONSTANTES, ...k }).regles.map((r) => r.code));
+
+  assert.ok(codes({}).has("R-SANCT"), "the baseline case must trigger the sanctions rule");
+  assert.ok(!codes({ seuilSanctionDoute: 0.95 }).has("R-SANCT"), "seuilSanctionDoute is not read");
+  assert.ok(!codes({ seuilSanctionCertain: 0.99 }).has("R-PEP"), "seuilSanctionCertain is not read");
+  assert.ok(!codes({ multipleAnormal: 99 }).has("R-VOL"), "multipleAnormal is not read");
+  // Prudence multiplies the norm, so a large value raises the bar and silences the rule.
+  // Written the other way round first, which asserted the opposite of what prudence does.
+  assert.ok(!codes({ prudence: 50 }).has("R-VOL"), "prudence is not read");
+  assert.ok(!trier(c, 0.7, undefined, { ...CONSTANTES, volumeEleve: 50_000_000 }).regles
+    .some((r) => r.code === "R-VOL"), "volumeEleve is not read");
+});
+
+test("volumeEleve is dormant, not inert", () => {
+  /*
+   * The sweep reported this constant as having no effect for a while, because the check
+   * meant to run it without a sector reference passed `undefined` to a parameter whose
+   * default *was* the reference. Removing the table moves breaches from none to dozens;
+   * the tool said "not worth defending in a review".
+   *
+   * This test asserts the fact the verdict rests on, so the verdict cannot go quietly
+   * wrong again.
+   */
+  const cas = genererCas(800);
+  const bas = mesurer(cas, 0.7, undefined, { ...CONSTANTES, volumeEleve: 400_000 });
+  const haut = mesurer(cas, 0.7, undefined, { ...CONSTANTES, volumeEleve: 5_000_000 });
+
+  assert.ok(haut.manquements > bas.manquements + 5,
+    "without a sector table, volumeEleve must visibly decide the breaches");
+
+  const avecBas = mesurer(cas, 0.7, REFERENTIEL_SECTORIEL, { ...CONSTANTES, volumeEleve: 400_000 });
+  const avecHaut = mesurer(cas, 0.7, REFERENTIEL_SECTORIEL, { ...CONSTANTES, volumeEleve: 5_000_000 });
+  assert.equal(avecBas.manquements, avecHaut.manquements, "with a complete table it must be dormant");
+});
+
+test("materiality needs both of its tests", () => {
+  /*
+   * Relative alone published "+1416 %" on a 2 ms difference in another repository.
+   * Absolute alone calls a 4-file move in 500 a change. Either test on its own is wrong
+   * in a different direction, so both have to hold.
+   */
+  assert.ok(!materiel(3, 5), "a 2-file move on a base of 3 is a large ratio and nothing else");
+  assert.ok(!materiel(500, 504), "a 4-file move on a base of 500 is noise");
+  assert.ok(materiel(50, 80), "a move that clears both tests is a change");
+});
+
+test("the plausible ranges contain the values actually in use", () => {
+  /*
+   * A sweep whose range excludes the value being swept walks in one direction only and
+   * reports a band that cannot contain the answer. Cheap to get wrong when a constant is
+   * retuned and the range is not.
+   */
+  for (const [nom, [bas, haut]] of Object.entries(PLAUSIBLE)) {
+    const v = CONSTANTES[nom as keyof Constantes];
+    assert.ok(v >= bas && v <= haut, `${nom} = ${v} sits outside its own plausible range ${bas}–${haut}`);
   }
 });

@@ -34,9 +34,10 @@ export const MULTIPLE_ANORMAL = 3.5;
  * Un dossier à douze fois la norme du secteur est un constat net. À trois fois et demie
  * tout juste, c'est un jugement — et l'agent doit le dire plutôt que de trancher.
  */
-export function netteteVolume(rapport: number): number {
-  if (rapport >= 6) return 0.95;
-  if (rapport >= MULTIPLE_ANORMAL) return 0.45 + ((rapport - MULTIPLE_ANORMAL) / (6 - MULTIPLE_ANORMAL)) * 0.45;
+export function netteteVolume(rapport: number, multiple = MULTIPLE_ANORMAL): number {
+  const net = Math.max(multiple + 0.5, 6);
+  if (rapport >= net) return 0.95;
+  if (rapport >= multiple) return 0.45 + ((rapport - multiple) / (net - multiple)) * 0.45;
   return 0.3;
 }
 
@@ -64,9 +65,11 @@ export function netteteVolume(rapport: number): number {
  */
 export const PRUDENCE = 0.85;
 
-/** The reference as the agent should use it: deliberately understated. */
-export function referentielPrudent(r: Referentiel = REFERENTIEL_SECTORIEL): Referentiel {
-  const prudent: Referentiel = new Map();
-  for (const [secteur, valeur] of r) prudent.set(secteur, valeur * PRUDENCE);
-  return prudent;
-}
+/*
+ * There is deliberately no `referentielPrudent` helper here.
+ *
+ * There was one, unused, and it was a trap: the agent already multiplies every row it
+ * reads by PRUDENCE. Anything passing a pre-discounted table in would have taken the
+ * margin twice — 0.72 instead of 0.85 — and the only visible symptom would have been
+ * more escalations, which reads like caution rather than like a bug.
+ */
