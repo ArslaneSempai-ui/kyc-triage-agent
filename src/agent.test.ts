@@ -1,4 +1,6 @@
 import { test } from "node:test";
+import { INVENTORY, MUST_DECLARE, CITED } from "./inventory.ts";
+import { ALL } from "./regulations.ts";
 import assert from "node:assert/strict";
 import { genererCas } from "./cas.ts";
 import { trier, CONSTANTES } from "./agent.ts";
@@ -232,4 +234,50 @@ test("the plausible ranges contain the values actually in use", () => {
     const v = CONSTANTES[nom as keyof Constantes];
     assert.ok(v >= bas && v <= haut, `${nom} = ${v} sits outside its own plausible range ${bas}–${haut}`);
   }
+});
+
+/* ── where every number came from ── */
+
+test("nothing the agent runs on is missing from the inventory", () => {
+  /*
+   * An inventory of a page's own numbers, typed by hand, goes stale the first time somebody
+   * adds a figure — and it goes stale in the flattering direction, because the figure people
+   * forget to declare is the one they were least comfortable declaring. So it is checked
+   * against the structures it describes.
+   */
+  const declared = new Set(INVENTORY.map((f) => f.name));
+  for (const key of MUST_DECLARE.constants) {
+    assert.ok(declared.has(key), `${key} is a constant the agent runs on and the inventory omits it`);
+  }
+  for (const cite of MUST_DECLARE.regulations) {
+    assert.ok(declared.has(cite), `${cite} is cited by a rule and the inventory omits it`);
+  }
+});
+
+test("every constant I chose is labelled chosen, and every one of them is swept", () => {
+  /*
+   * The two halves of the promise. A number picked by judgement is only acceptable on a
+   * page if the page also says how much rests on it — otherwise "chosen" is a politer word
+   * for "made up".
+   */
+  for (const key of MUST_DECLARE.constants) {
+    const f = INVENTORY.find((x) => x.name === key)!;
+    assert.equal(f.provenance, "chosen", `${key} is mine and must be labelled as mine`);
+    assert.ok(MUST_DECLARE.swept.includes(key), `${key} is declared chosen but no sweep reports on it`);
+    assert.ok(f.note && f.note.length > 20, `${key} is chosen and says nothing about why`);
+  }
+});
+
+test("the citation list is what the rules cite, not what the shared file holds", () => {
+  /*
+   * The shared regulations file is copied into five repositories. Listing all of it under
+   * "what every decision cites" put a sanctions-reporting rule on a page about onboarding,
+   * cited by nothing. Caught once by the staleness check; asserted here so it stays caught.
+   */
+  const firing = new Set(
+    genererCas(400).flatMap((c) => trier(c, 0.7, REFERENTIEL_SECTORIEL).regles)
+      .map((r) => r.regulation).filter((k) => k !== null),
+  );
+  assert.equal(CITED.length, firing.size, "the cited list must be exactly the rules that fire");
+  assert.ok(CITED.length < ALL.length, "and it must be smaller than the shared file, or nothing was filtered");
 });

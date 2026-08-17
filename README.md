@@ -293,6 +293,60 @@ and arguing with it is the point.
 
 ---
 
+## Where every number comes from
+
+A table renders a figure retrieved from the Code of Federal Regulations and a figure I
+picked in exactly the same typeface, which quietly claims they are equivalent. They are
+not.
+
+<!-- figures:provenance -->
+**5 retrieved**, **5 measured**, **2 assumed**, **7 chosen**. What each kind means, and what you are entitled to ask of it:
+
+- **retrieved** — a public source says this, on the date recorded, in words linked from the page. *follow the link.*
+- **measured** — running the code in this repository produces it. *run it yourself — the draws are seeded.*
+- **assumed** — an input nobody here can know; yours to supply. *put your own figure in, and read the band around it.*
+- **chosen** — my judgement and nothing else. *check whether the sweep says it decides anything.*
+
+| Kind | Name | What it is | Note |
+|---|---|---|---|
+| retrieved | `31 CFR 1020.320(a)(2)` | A bank must report a suspicious transaction conducted or attempted by, at or through it once the amount involved or aggregated reaches the threshold. | retrieved 2026-08-17 |
+| retrieved | `31 CFR 1010.230(d)(1)` | Each individual holding a quarter or more of the equity of a legal entity customer must be identified. | retrieved 2026-08-17 |
+| retrieved | `31 CFR 1010.230(d)(2)` | One individual with significant responsibility to control or direct the entity must be identified, in addition to any owners. | retrieved 2026-08-17 |
+| retrieved | `31 CFR 1010.230(a)` | Beneficial owners are identified when the account is opened, not afterwards. | retrieved 2026-08-17 |
+| retrieved | `31 CFR 1010.311` | A currency transaction above the threshold is reported by the financial institution. | retrieved 2026-08-17 |
+| measured | `tauxAutomatisation` | share of files decided without a human | measured on the synthetic case set below — see `genererCas` |
+| measured | `manquements` | files decided alone that had to go to a human — the costly error | the error with a fine attached, counted separately from wasted analyst time |
+| measured | `escaladesInutiles` | files sent to an analyst for nothing | analyst time; visible, and nobody is harmed |
+| measured | `precisionAutomatisee` | how often an automated decision is the right one | published with its 95 % interval, because 400 files is not many |
+| measured | `bande` | the range over which each chosen constant changes nothing | five independent draws; one draw cannot tell a threshold from a coincidence |
+| assumed | `seuil` | the confidence below which the agent refuses to decide | belongs to the business, not to whoever writes the code; the screen edits it |
+| assumed | `REFERENTIEL_SECTORIEL` | typical annual volume by sector | a market average, approximate like every reference table; the sweep says how wrong it may be |
+| chosen | `seuilSanctionCertain` | above this, a screening match is treated as unambiguous | no regulation says where a match becomes certain; the sweep says this one decides |
+| chosen | `seuilSanctionDoute` | below this, a screening match is not looked at at all | it costs breaches at the far end of its range; where it starts is under the sampling noise |
+| chosen | `volumeEleve` | the flat ceiling used only where no sector reference exists | dormant with a complete table, decisive without one — not the same as irrelevant |
+| chosen | `multipleAnormal` | multiple of the sector norm above which a volume is examined | no source defines an abnormal multiple; it costs breaches at 8× |
+| chosen | `prudence` | the margin taken against the reference table being wrong | derived from observed reference error, not from outcomes — and the headroom is thinner than the measurement's resolution |
+| chosen | `nettete` | how sharp each rule's trigger is, from 0 to 1 | the ordering is defensible — an unreadable document is fuzzier than an expired one; the values are mine |
+| chosen | `genererCas` | the shape of the synthetic case set, and its ground truth | an agent scored against cases whose answers I wrote is marked by its own author |
+<!-- /figures:provenance -->
+
+The line that costs the most to write is the last one. "No breach in four hundred files" is
+measured — run it and you get it, the draw is seeded — and the four hundred files are
+synthetic, built by me, against a ground truth I also wrote. **An agent scored on cases
+whose answers I chose is being marked by its own author.**
+
+The defences elsewhere in this repository are real: the agent deliberately does not
+reimplement the rule that scores it, it is measured against trivial baselines, every
+failure is published in full, and every rate carries its interval. None of that makes a
+synthetic case set a real one.
+
+What survives is narrower and worth stating exactly: **the discipline is the finding, the
+score is illustration.** That an automated decision should carry a citation, stop where it
+is unsure, and be scored on breaches rather than on accuracy — that holds anywhere. That it
+reaches 63 % automation with no breach holds on my four hundred files.
+
+---
+
 ## How it's built
 
 ```

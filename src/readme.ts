@@ -13,7 +13,8 @@ import { collecter, forme, decrire } from "./echecs.ts";
 import { trier } from "./agent.ts";
 import { balayerErreur, bandes, PLAUSIBLE, AVEU, GRAINES, tirages } from "./sensibilite.ts";
 import { rate } from "./interval.ts";
-import { REGULATIONS, ALL } from "./regulations.ts";
+import { INVENTORY, CITED } from "./inventory.ts";
+import { markdown } from "./provenance.ts";
 import { comparer as comparerBases } from "./bases.ts";
 import { run as emit, table } from "./figures.ts";
 
@@ -145,17 +146,15 @@ const baselines = table(
  * "what every decision cites" listing something no decision cites. Deriving the list from
  * the rules means it cannot drift again.
  */
-const cited = new Set(
-  genererCas(400).flatMap((c) => trier(c, 0.7, REFERENTIEL_SECTORIEL).regles)
-    .map((r) => r.regulation).filter((k): k is NonNullable<typeof k> => k !== null),
-);
 const citations = table(
   ["Citation", "Requires", "Figure", "Retrieved"],
-  ALL.filter((r) => [...cited].some((k) => REGULATIONS[k].cite === r.cite))
-    .map((r) => [
-      `[${r.cite}](${r.source})`, r.says, r.figure ?? "—", r.retrieved,
-    ]),
+  CITED.map((r) => [
+    `[${r.cite}](${r.source})`, r.says, r.figure ?? "—", r.retrieved,
+  ]),
 );
 
+/* Where every number on this page came from. Generated, and guarded by a test. */
+const provenance = markdown(INVENTORY, table);
+
 emit(new URL("../README.md", import.meta.url).pathname,
-  { tradeoff, context, sensitivity, chosen, failures, margin, baselines, citations });
+  { tradeoff, context, sensitivity, chosen, failures, margin, baselines, provenance, citations });
