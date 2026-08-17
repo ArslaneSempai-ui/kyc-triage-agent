@@ -9,7 +9,7 @@ every decision, and **hands the file to a human when it isn't confident**.
 
 **[Try it in your browser →](https://arslanesempai-ui.github.io/kyc-triage-agent/)** — the whole agent runs client-side. Drag the confidence bar and watch the trade-off move. No install, nothing leaves your machine.
 
-![The review queue](images/queue.png)
+![Dragging the confidence bar: the trade-off moves, the breaches do not](images/demo.gif)
 
 ```bash
 npm start          # the review queue, on localhost:4500
