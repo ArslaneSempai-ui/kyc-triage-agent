@@ -7,6 +7,8 @@ every decision, and **hands the file to a human when it isn't confident**.
 **The finding.** Moving the confidence bar was never the expensive lever. The escalations came from one badly informed rule — a flat volume ceiling applied to every sector — and giving the agent sector context took automation from **39.3 %** to **63.0 %**, wasted escalations from 146 to 50, and breaches from 1 to **0**. Dragging the bar had cost breaches for every point it bought.
 <!-- /figures:finding -->
 
+**[Try it in your browser →](https://arslanesempai-ui.github.io/kyc-triage-agent/)** — the whole agent runs client-side. Drag the confidence bar and watch the trade-off move. No install, nothing leaves your machine.
+
 ![The review queue](images/queue.png)
 
 ```bash
@@ -400,6 +402,74 @@ its own marking scheme scores 100 % and demonstrates nothing.
 - **Synthetic data.** Every conclusion above holds for this generator. On a real book of
   business, all of it must be re-measured — which is the first finding of the previous
   project, and the reason the measurement harness ships with the tool.
+
+---
+
+## What this does not let you conclude
+
+Everything above is measured, and a measurement invites conclusions it does not support.
+The ones this page is most likely to be read as making, and does not:
+
+**Not "63 % of onboarding can be automated."** 63 % of *these* files, under a rule set I
+wrote, against a ground truth I also wrote. The number is a property of the generator as
+much as of the agent. What travels is the shape: a well-informed rule beats a well-tuned
+threshold, and the two are not substitutes.
+
+**Not "zero breaches means it is safe."** Zero out of four hundred files puts a 95 %
+interval of roughly [0 %–0.9 %] on the breach rate. On a real book of ten thousand
+onboardings a year, the upper end of that interval is ninety uncontrolled entries. The
+right reading is "no breach was observed at this size", which is a much smaller claim.
+
+**Not "the constants are validated."** One of the five survives its own sweep. Three cost
+breaches at the far end of their plausible range in every draw, and no draw agrees with
+the others on where that starts. They are published because they matter, not because they
+are settled.
+
+**Not "an agent that stops when unsure is safe by construction."** It stops when its
+*confidence* is low, and confidence is computed from rules it has. A file that is wrong in
+a way no rule looks at produces high confidence and a clean approval. Abstention protects
+against known uncertainty, and nothing protects against the other kind.
+
+---
+
+## What I would do differently
+
+**Measure the generator against something real before building on it.** Every figure here
+inherits the shape of a case set I invented. A hundred real files, anonymised and never
+published, would have grounded the whole thing — and I would have found out early whether
+the sector-volume rule is the lever it appears to be, rather than at the end.
+
+**Write the sweep before the tuning, not after.** I picked five constants by judgement,
+built the tool, and swept them last. The sweep then told me four of them cannot be
+defended by this measurement. Had it come first, I would have designed the case set to
+resolve them instead of discovering it could not.
+
+**Separate the rule engine from the scoring earlier.** The two were entangled long enough
+that I nearly reimplemented the scoring rule inside the agent — the failure that gives you
+100 % and demonstrates nothing. It took a deliberate rewrite to keep them apart, and it
+would have cost nothing to start there.
+
+**Stop trusting a figure because I typed it.** Three separate times a number on this page
+disagreed with the code that produced it. Generating them from measured output was the fix,
+and it should have been the starting position rather than the third correction.
+
+---
+
+## What a reviewer can check without running anything
+
+Everything asserted here is anchored somewhere a reader can reach:
+
+| Claim | Where it is checked |
+|---|---|
+| Every figure on this page | Generated from measured output; `npm test` fails if the page drifts |
+| Every regulation cited | Linked to the section, with the retrieval date, and quoted verbatim |
+| Every constant I chose | Declared in the inventory with an admission, and swept |
+| Every failure | Published in full rather than summarised into a rate |
+| Every rate | Carries its 95 % interval, and is withdrawn below 20 observations |
+| The case draw | Seeded — a stranger running `npm test` gets these exact numbers |
+
+That list is the actual deliverable. A tool that produces a good number and cannot show
+where the number came from is worth less than one that produces a worse number and can.
 
 ---
 
