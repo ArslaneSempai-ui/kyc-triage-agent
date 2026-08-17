@@ -51,6 +51,13 @@ const serveur = createServer(async (req, res) => {
       return;
     }
 
+    if (url.pathname === "/registre.css") {
+      const css = readFileSync(new URL("./registre.css", import.meta.url).pathname, "utf8");
+      res.writeHead(200, { "content-type": "text/css; charset=utf-8", "cache-control": "no-store" });
+      res.end(css);
+      return;
+    }
+
     if (url.pathname === "/api/etat") {
       return json(res, { chiffres: chiffres(), file: fileDAttente(), traitees: traitees() });
     }

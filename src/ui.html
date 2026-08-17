@@ -4,134 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Triage des entrées en relation</title>
-<style>
-  /*
-   * Un seul écran. Les chiffres en haut, le réglage au milieu, le travail en bas.
-   *
-   * L'accent coloré ne marque que deux choses : la décision proposée par l'agent, et un
-   * motif d'escalade. Un écran où tout est accentué n'accentue rien.
-   */
-  :root {
-    --bg:#faf9f7; --panel:#fff; --line:#e4e2dd; --line-fort:#d0cdc6;
-    --text:#1a1a18; --muted:#69675f; --faint:#9a978e;
-    --accent:#1d6b52; --accent-soft:#eef4f1;
-    --warn:#8a5410; --warn-soft:#fbf2e4; --danger:#93312e; --danger-soft:#faece9;
-    --serif: ui-serif, Georgia, "Times New Roman", serif;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg:#131416; --panel:#1c1d20; --line:#2b2c30; --line-fort:#3a3c41;
-      --text:#e8e7e3; --muted:#9a9891; --faint:#6a6862;
-      --accent:#4fbb94; --accent-soft:#16302a;
-      --warn:#dda15e; --warn-soft:#2f2416; --danger:#d98682; --danger-soft:#2c1a19; }
-  }
-  * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--text);
-    font:15px/1.65 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif;
-    -webkit-font-smoothing:antialiased; overflow-x:hidden; }
-  main { max-width:900px; margin:0 auto; padding:40px 24px 120px; }
-
-  .haut { display:flex; justify-content:space-between; align-items:flex-start; gap:20px;
-    flex-wrap:wrap; margin-bottom:24px; }
-  h1 { font-family:var(--serif); font-size:25px; font-weight:400; margin:0 0 6px;
-    letter-spacing:-0.01em; }
-  .lede { color:var(--muted); font-size:13.5px; margin:0; max-width:620px; }
-
-  .lang { display:flex; border:1px solid var(--line-fort); border-radius:7px;
-    overflow:hidden; flex:0 0 auto; }
-  .lang button { border:0; background:none; padding:8px 13px; font:inherit; font-size:12px;
-    letter-spacing:.03em; color:var(--muted); cursor:pointer; min-height:36px; }
-  .lang button.on { background:var(--text); color:var(--bg); font-weight:500; }
-
-  h2 { font-size:13px; font-weight:600; letter-spacing:.04em; text-transform:uppercase;
-    color:var(--muted); margin:34px 0 12px; }
-
-  .chiffres { display:grid; grid-template-columns:repeat(auto-fit,minmax(128px,1fr));
-    gap:1px; background:var(--line); border:1px solid var(--line);
-    border-radius:9px; overflow:hidden; }
-  .chiffre { background:var(--panel); padding:15px 17px; }
-  .chiffre b { display:block; font-size:25px; font-weight:500; letter-spacing:-0.03em;
-    line-height:1.2; font-variant-numeric:tabular-nums; }
-  .chiffre span { font-size:11.5px; color:var(--muted); letter-spacing:.02em; }
-  .chiffre.alerte b { color:var(--danger); }
-  .chiffre.attente b { color:var(--faint); font-size:20px; }
-
-  .carte { background:var(--panel); border:1px solid var(--line); border-radius:9px;
-    padding:17px 19px; margin-top:14px; }
-  .carte .titre { font-weight:500; font-size:14px; }
-  .carte .quoi { color:var(--muted); font-size:13px; margin-top:2px; }
-
-  /* Le curseur passe à la ligne plutôt que de déborder sur un écran étroit. */
-  .curseur { display:flex; align-items:center; gap:10px; margin-top:14px; flex-wrap:wrap; }
-  .curseur .bout { font-size:12px; color:var(--muted); flex:0 1 auto; }
-  input[type=range] { flex:1 1 180px; min-width:0; accent-color:var(--accent); height:28px; }
-  .val { font-variant-numeric:tabular-nums; font-weight:500; min-width:38px; text-align:right; }
-
-  .attribution { font-size:12.5px; color:var(--muted); margin-top:10px;
-    padding-top:10px; border-top:1px solid var(--line); }
-  .attribution b { color:var(--text); font-variant-numeric:tabular-nums; }
-
-  .bascule { display:flex; align-items:flex-start; gap:11px; margin-top:14px;
-    padding-top:14px; border-top:1px solid var(--line); }
-  .bascule input { accent-color:var(--accent); width:20px; height:20px; flex:0 0 auto;
-    margin-top:1px; }
-  .bascule label { font-size:13.5px; cursor:pointer; }
-
-  table.compromis { width:100%; border-collapse:collapse; margin-top:12px; font-size:13px; }
-  table.compromis th { text-align:right; font-weight:500; color:var(--muted);
-    font-size:11.5px; padding:6px 8px; border-bottom:1px solid var(--line-fort); }
-  table.compromis th:first-child { text-align:left; }
-  table.compromis td { text-align:right; padding:7px 8px; border-bottom:1px solid var(--line);
-    font-variant-numeric:tabular-nums; }
-  table.compromis td:first-child { text-align:left; }
-  table.compromis tr.ici td { background:var(--accent-soft); font-weight:500; }
-  .defile { overflow-x:auto; }
-
-  .dossier { background:var(--panel); border:1px solid var(--line); border-radius:9px;
-    padding:17px 19px; margin-bottom:11px; }
-  .entete { display:flex; justify-content:space-between; align-items:baseline; gap:14px;
-    flex-wrap:wrap; }
-  .nom { font-weight:500; }
-  .meta { font-size:12.5px; color:var(--muted); }
-  .motif { background:var(--warn-soft); color:var(--warn); border-radius:7px;
-    padding:9px 12px; font-size:13px; margin-top:11px; }
-
-  .regle { display:flex; gap:10px; padding:8px 0; border-bottom:1px solid var(--line);
-    font-size:13px; flex-wrap:wrap; }
-  .regle:last-of-type { border-bottom:0; }
-  .code { flex:0 0 72px; font-family:ui-monospace,Menlo,monospace; font-size:11.5px;
-    color:var(--accent); padding-top:2px; }
-  .constat { flex:1 1 200px; min-width:0; }
-  .clause { color:var(--faint); font-size:11.5px; margin-top:2px; }
-  .nettete { flex:0 0 auto; font-size:11.5px; color:var(--muted);
-    font-variant-numeric:tabular-nums; }
-
-  .actions { display:flex; gap:8px; margin-top:13px; flex-wrap:wrap; align-items:center; }
-  /*
-   * Aucune action n'est mise en avant par défaut.
-   *
-   * Remplir « Approuver » en vert faisait de l'approbation le geste réflexe sur une file
-   * de conformité — l'inverse exact d'un contrôle. Seule la décision que l'agent
-   * proposait est signalée, et sobrement : elle informe, elle n'appelle pas le clic.
-   */
-  button.b { font:inherit; font-size:13.5px; padding:10px 15px; min-height:44px;
-    border:1px solid var(--line-fort); border-radius:7px; background:var(--panel);
-    color:var(--text); cursor:pointer; }
-  button.b:hover:not(:disabled) { border-color:var(--text); }
-  button.b.propose { border-color:var(--accent); color:var(--accent); font-weight:500; }
-  button.b:disabled { opacity:.4; cursor:default; }
-  button.b.discret { font-size:12.5px; padding:7px 12px; min-height:36px; color:var(--muted); }
-  input.motif-champ { font:inherit; font-size:13.5px; padding:10px 12px; min-height:44px;
-    flex:1 1 180px; min-width:0; border:1px solid var(--line-fort); border-radius:7px;
-    background:var(--bg); color:var(--text); }
-  input.motif-champ:focus { outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent); }
-
-  .vide { color:var(--muted); font-size:13.5px; background:var(--panel);
-    border:1px dashed var(--line-fort); border-radius:9px; padding:22px; text-align:center; }
-  .fait { display:flex; justify-content:space-between; gap:14px; padding:9px 0;
-    border-bottom:1px solid var(--line); font-size:13px; flex-wrap:wrap; }
-  .fait:last-child { border-bottom:0; }
-  .desaccord { color:var(--warn); }
-</style>
+<link rel="stylesheet" href="/registre.css" />
 </head>
 <body>
 <main>
@@ -145,7 +18,7 @@
     </div>
   </div>
 
-  <div class="chiffres" id="chiffres"></div>
+  <div id="chiffres"></div>
   <div id="reglages"></div>
 
   <h2 id="titreCompromis"></h2>
@@ -176,6 +49,7 @@ const T = {
   fr: {
     h1: "Triage des entrées en relation",
     lede: "L'agent applique la procédure sur chaque dossier, cite la clause qui fonde sa décision, et s'arrête quand il n'est pas sûr. Ce qui reste ci-dessous est ce qu'il n'a pas voulu trancher seul.",
+    releve: "Relevé du portefeuille",
     auto: "traité sans humain", enFile: "dans la file",
     evitables: "escalades évitables", manquements: "manquements",
     justesse: "justesse en automatique", accord: "l'humain confirme l'agent",
@@ -217,6 +91,7 @@ const T = {
   en: {
     h1: "Onboarding triage",
     lede: "The agent applies the procedure to each file, cites the clause behind its decision, and stops when it isn't confident. What's left below is what it wouldn't decide alone.",
+    releve: "Portfolio statement",
     auto: "handled without a human", enFile: "in the queue",
     evitables: "avoidable escalations", manquements: "breaches",
     justesse: "correct when automatic", accord: "human agrees with the agent",
@@ -305,30 +180,54 @@ function blocChiffres(c) {
     ? { v: pc(c.tauxAccord), l: L.accord }
     : { v: "—", l: L.accordAttente(c.manquePourConclure), attente: true });
 
-  $("#chiffres").innerHTML = cases.map((x) =>
-    `<div class="chiffre${x.alerte ? " alerte" : ""}${x.attente ? " attente" : ""}">
-      <b>${esc(x.v)}</b><span>${esc(x.l)}</span></div>`).join("");
+  /*
+   * Un compte, pas des tuiles.
+   *
+   * Le manquement est le total : il découle de ce qui est au-dessus de lui, et une
+   * tuile posée à côté des autres ne disait pas cela.
+   */
+  /*
+   * Le total est le manquement, pas la dernière tuile venue.
+   *
+   * Une première version plaçait en total « il manque 9 décisions pour conclure » : une
+   * réserve, pas une conclusion. Le total doit être ce qui décide — ici le seul chiffre
+   * dont le coût est réglementaire.
+   */
+  const accord = cases.pop();
+  const manquements = cases.splice(3, 1)[0];
+
+  $("#chiffres").innerHTML = `<section class="feuillet">
+    <div class="intitule">${esc(L.releve)}</div>
+    <div class="corps">
+      ${cases.map((x) => `<div class="ligne">
+        <span class="intitule">${esc(x.l)}</span>
+        <span class="valeur">${esc(x.v)}</span></div>`).join("")}
+      <div class="ligne total ${c.manquements > 0 ? "defavorable" : "favorable"}">
+        <span class="intitule">${esc(manquements.l)}</span>
+        <span class="valeur">${esc(manquements.v)}</span></div>
+      <div class="renvoi">${esc(accord.l)}${accord.attente ? "" : ` — ${esc(accord.v)}`}</div>
+    </div></section>`;
 }
 
 function blocReglages(c) {
   const L = t();
   $("#reglages").innerHTML = `
-    <div class="carte">
+    <section class="feuillet"><div class="corps">
       <div class="titre">${esc(L.seuilTitre)}</div>
       <div class="quoi">${esc(L.seuilQuoi)}</div>
-      <div class="curseur">
+      <div class="rang">
         <span class="bout">${esc(L.seuilBas)}</span>
         <input type="range" id="seuil" min="0.3" max="0.99" step="0.01" value="${c.seuil}"
           aria-label="${esc(L.seuilNom)}" />
         <span class="bout">${esc(L.seuilHaut)}</span>
-        <span class="val" id="seuilVal">${c.seuil.toFixed(2)}</span>
+        <span class="lecture" id="seuilVal">${c.seuil.toFixed(2)}</span>
       </div>
       <div class="attribution">${L.attribution(c.parLaRegle, c.parLeSeuil)}</div>
       <div class="bascule">
         <input type="checkbox" id="ref" ${c.referentielActif ? "checked" : ""} />
         <label for="ref">${esc(L.refLabel)}</label>
       </div>
-    </div>`;
+    </div></section>`;
 
   const seuil = $("#seuil");
   seuil.oninput = () => { $("#seuilVal").textContent = Number(seuil.value).toFixed(2); };
@@ -353,11 +252,11 @@ function blocCompromis(c) {
   }).join("");
 
   $("#compromis").innerHTML = `
-    <div class="carte">
+    <div class="feuillet">
       <div class="quoi">${esc(L.compromisQuoi)}
         — <em>${esc(c.referentielActif ? L.avecRef : L.sansRef)}</em></div>
       <div class="defile">
-        <table class="compromis">
+        <table >
           <thead><tr>
             <th>${esc(L.colSeuil)}</th><th>${esc(L.colAuto)}</th><th>${esc(L.colJuste)}</th>
             <th>${esc(L.colManq)}</th><th>${esc(L.colEvit)}</th>
@@ -374,10 +273,10 @@ function blocRegles(regles) {
     return `<div class="regle"><div class="constat" style="color:var(--muted)">${esc(L.aucuneRegle)}</div></div>`;
   }
   return regles.map((r) => `
-    <div class="regle">
-      <div class="code">${esc(r.code)}</div>
-      <div class="constat">${esc(r.constat[langue])}<div class="clause">${esc(r.clause[langue])}</div></div>
-      <div class="nettete">${esc(L.nettete)} ${r.nettete.toFixed(2)}</div>
+    <div class="ligne">
+      <span class="intitule"><span class="reference">${esc(r.code)}</span> ${esc(r.constat[langue])}
+        <small>${esc(r.clause[langue])}</small></span>
+      <span class="valeur">${r.nettete.toFixed(2)} <small>${esc(L.nettete)}</small></span>
     </div>`).join("");
 }
 
@@ -386,26 +285,26 @@ function dossier(l) {
   const c = l.cas, v = l.verdict;
   const langNum = langue === "fr" ? "fr-FR" : "en-GB";
   return `
-    <div class="dossier" data-cas="${esc(c.id)}">
-      <div class="entete">
+    <div class="feuillet dossier" data-cas="${esc(c.id)}">
+      <div class="corps"><div class="entete">
         <div><span class="nom">${esc(c.nom)}</span>
           <span class="meta"> · ${esc(mot(c.type))} · ${esc(c.paysResidence)}</span></div>
         <div class="meta">${esc(c.id)} · ${esc(L.confiance)} ${v.confiance.toFixed(2)}</div>
       </div>
       <div class="meta">${esc(mot(c.activite.secteur))} · ${c.activite.volumeAnnuelDeclare.toLocaleString(langNum)} € ${esc(L.declares)} · ${esc(L.opere)} ${esc(c.activite.paysOperation.join(", "))}</div>
 
-      <div class="motif">${esc(v.escalade
+      <div class="renvoi attention">${esc(v.escalade
         ? L.sousLeSeuil(v.motifEscalade.confiance, v.motifEscalade.seuil)
         : L.parLaRegle)}</div>
       <div style="margin-top:12px">${blocRegles(v.regles)}</div>
 
-      <div class="actions">
-        <input class="motif-champ" placeholder="${esc(L.motifChamp)}" />
+      <div class="rang">
+        <input class="champ" placeholder="${esc(L.motifChamp)}" />
         ${["approuver", "complement", "escalader"].map((d) => `
           <button type="button" class="b${d === v.decisionBrute ? " propose" : ""}" data-d="${d}"
             ${d === v.decisionBrute ? `title="${esc(L.proposeTitre)}"` : ""}>${esc(L[d])}${d === v.decisionBrute ? " ·" : ""}</button>`).join("")}
       </div>
-    </div>`;
+    </div></div>`;
 }
 
 function dessiner() {
