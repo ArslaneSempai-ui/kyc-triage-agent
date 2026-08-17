@@ -8,8 +8,8 @@
   /*
    * Un seul écran. Les chiffres en haut, le réglage au milieu, le travail en bas.
    *
-   * L'accent coloré ne marque que deux choses : l'action en cours, et un motif
-   * d'escalade. Un écran où tout est accentué n'accentue rien.
+   * L'accent coloré ne marque que deux choses : la décision proposée par l'agent, et un
+   * motif d'escalade. Un écran où tout est accentué n'accentue rien.
    */
   :root {
     --bg:#faf9f7; --panel:#fff; --line:#e4e2dd; --line-fort:#d0cdc6;
@@ -27,17 +27,25 @@
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--text);
     font:15px/1.65 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif;
-    -webkit-font-smoothing:antialiased; }
-  main { max-width:900px; margin:0 auto; padding:44px 30px 120px; }
+    -webkit-font-smoothing:antialiased; overflow-x:hidden; }
+  main { max-width:900px; margin:0 auto; padding:40px 24px 120px; }
 
+  .haut { display:flex; justify-content:space-between; align-items:flex-start; gap:20px;
+    flex-wrap:wrap; margin-bottom:24px; }
   h1 { font-family:var(--serif); font-size:25px; font-weight:400; margin:0 0 6px;
     letter-spacing:-0.01em; }
-  .lede { color:var(--muted); font-size:13.5px; margin:0 0 26px; max-width:620px; }
+  .lede { color:var(--muted); font-size:13.5px; margin:0; max-width:620px; }
+
+  .lang { display:flex; border:1px solid var(--line-fort); border-radius:7px;
+    overflow:hidden; flex:0 0 auto; }
+  .lang button { border:0; background:none; padding:8px 13px; font:inherit; font-size:12px;
+    letter-spacing:.03em; color:var(--muted); cursor:pointer; min-height:36px; }
+  .lang button.on { background:var(--text); color:var(--bg); font-weight:500; }
 
   h2 { font-size:13px; font-weight:600; letter-spacing:.04em; text-transform:uppercase;
     color:var(--muted); margin:34px 0 12px; }
 
-  .chiffres { display:grid; grid-template-columns:repeat(auto-fit,minmax(132px,1fr));
+  .chiffres { display:grid; grid-template-columns:repeat(auto-fit,minmax(128px,1fr));
     gap:1px; background:var(--line); border:1px solid var(--line);
     border-radius:9px; overflow:hidden; }
   .chiffre { background:var(--panel); padding:15px 17px; }
@@ -45,20 +53,38 @@
     line-height:1.2; font-variant-numeric:tabular-nums; }
   .chiffre span { font-size:11.5px; color:var(--muted); letter-spacing:.02em; }
   .chiffre.alerte b { color:var(--danger); }
+  .chiffre.attente b { color:var(--faint); font-size:20px; }
 
-  .reglage { background:var(--panel); border:1px solid var(--line); border-radius:9px;
+  .carte { background:var(--panel); border:1px solid var(--line); border-radius:9px;
     padding:17px 19px; margin-top:14px; }
-  .reglage .titre { font-weight:500; font-size:14px; }
-  .reglage .quoi { color:var(--muted); font-size:13px; margin-top:2px; }
-  .curseur { display:flex; align-items:center; gap:12px; margin-top:12px; }
-  .curseur span { font-size:12px; color:var(--muted); flex:0 0 auto; }
-  input[type=range] { flex:1; accent-color:var(--accent); }
-  .val { font-variant-numeric:tabular-nums; font-weight:500; min-width:34px; text-align:right; }
+  .carte .titre { font-weight:500; font-size:14px; }
+  .carte .quoi { color:var(--muted); font-size:13px; margin-top:2px; }
 
-  .bascule { display:flex; align-items:center; gap:10px; margin-top:16px;
+  /* Le curseur passe à la ligne plutôt que de déborder sur un écran étroit. */
+  .curseur { display:flex; align-items:center; gap:10px; margin-top:14px; flex-wrap:wrap; }
+  .curseur .bout { font-size:12px; color:var(--muted); flex:0 1 auto; }
+  input[type=range] { flex:1 1 180px; min-width:0; accent-color:var(--accent); height:28px; }
+  .val { font-variant-numeric:tabular-nums; font-weight:500; min-width:38px; text-align:right; }
+
+  .attribution { font-size:12.5px; color:var(--muted); margin-top:10px;
+    padding-top:10px; border-top:1px solid var(--line); }
+  .attribution b { color:var(--text); font-variant-numeric:tabular-nums; }
+
+  .bascule { display:flex; align-items:flex-start; gap:11px; margin-top:14px;
     padding-top:14px; border-top:1px solid var(--line); }
-  .bascule input { accent-color:var(--accent); width:16px; height:16px; }
+  .bascule input { accent-color:var(--accent); width:20px; height:20px; flex:0 0 auto;
+    margin-top:1px; }
   .bascule label { font-size:13.5px; cursor:pointer; }
+
+  table.compromis { width:100%; border-collapse:collapse; margin-top:12px; font-size:13px; }
+  table.compromis th { text-align:right; font-weight:500; color:var(--muted);
+    font-size:11.5px; padding:6px 8px; border-bottom:1px solid var(--line-fort); }
+  table.compromis th:first-child { text-align:left; }
+  table.compromis td { text-align:right; padding:7px 8px; border-bottom:1px solid var(--line);
+    font-variant-numeric:tabular-nums; }
+  table.compromis td:first-child { text-align:left; }
+  table.compromis tr.ici td { background:var(--accent-soft); font-weight:500; }
+  .defile { overflow-x:auto; }
 
   .dossier { background:var(--panel); border:1px solid var(--line); border-radius:9px;
     padding:17px 19px; margin-bottom:11px; }
@@ -70,55 +96,65 @@
     padding:9px 12px; font-size:13px; margin-top:11px; }
 
   .regle { display:flex; gap:10px; padding:8px 0; border-bottom:1px solid var(--line);
-    font-size:13px; }
+    font-size:13px; flex-wrap:wrap; }
   .regle:last-of-type { border-bottom:0; }
-  .code { flex:0 0 74px; font-family:ui-monospace,Menlo,monospace; font-size:11.5px;
+  .code { flex:0 0 72px; font-family:ui-monospace,Menlo,monospace; font-size:11.5px;
     color:var(--accent); padding-top:2px; }
-  .constat { flex:1; min-width:0; }
+  .constat { flex:1 1 200px; min-width:0; }
   .clause { color:var(--faint); font-size:11.5px; margin-top:2px; }
   .nettete { flex:0 0 auto; font-size:11.5px; color:var(--muted);
     font-variant-numeric:tabular-nums; }
 
   .actions { display:flex; gap:8px; margin-top:13px; flex-wrap:wrap; align-items:center; }
-  button.b { font:inherit; font-size:13.5px; padding:8px 14px; border:1px solid var(--line-fort);
-    border-radius:7px; background:var(--panel); color:var(--text); cursor:pointer; }
-  button.b:hover:not(:disabled) { border-color:var(--text); }
   /*
    * Aucune action n'est mise en avant par défaut.
    *
    * Remplir « Approuver » en vert faisait de l'approbation le geste réflexe sur une file
-   * de conformité — exactement l'inverse de ce qu'on veut d'un contrôle. Seule la
-   * décision que l'agent proposait est signalée, et sobrement : elle informe, elle
-   * n'appelle pas le clic.
+   * de conformité — l'inverse exact d'un contrôle. Seule la décision que l'agent
+   * proposait est signalée, et sobrement : elle informe, elle n'appelle pas le clic.
    */
+  button.b { font:inherit; font-size:13.5px; padding:10px 15px; min-height:44px;
+    border:1px solid var(--line-fort); border-radius:7px; background:var(--panel);
+    color:var(--text); cursor:pointer; }
+  button.b:hover:not(:disabled) { border-color:var(--text); }
   button.b.propose { border-color:var(--accent); color:var(--accent); font-weight:500; }
   button.b:disabled { opacity:.4; cursor:default; }
-  input.motif-champ { font:inherit; font-size:13.5px; padding:8px 12px; flex:1; min-width:180px;
-    border:1px solid var(--line-fort); border-radius:7px; background:var(--bg); color:var(--text); }
-  input.motif-champ:focus { outline:none; border-color:var(--accent); }
+  button.b.discret { font-size:12.5px; padding:7px 12px; min-height:36px; color:var(--muted); }
+  input.motif-champ { font:inherit; font-size:13.5px; padding:10px 12px; min-height:44px;
+    flex:1 1 180px; min-width:0; border:1px solid var(--line-fort); border-radius:7px;
+    background:var(--bg); color:var(--text); }
+  input.motif-champ:focus { outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent); }
 
   .vide { color:var(--muted); font-size:13.5px; background:var(--panel);
     border:1px dashed var(--line-fort); border-radius:9px; padding:22px; text-align:center; }
   .fait { display:flex; justify-content:space-between; gap:14px; padding:9px 0;
-    border-bottom:1px solid var(--line); font-size:13px; }
+    border-bottom:1px solid var(--line); font-size:13px; flex-wrap:wrap; }
   .fait:last-child { border-bottom:0; }
   .desaccord { color:var(--warn); }
 </style>
 </head>
 <body>
 <main>
-  <h1>Triage des entrées en relation</h1>
-  <p class="lede">L'agent applique la procédure sur chaque dossier, cite la clause qui
-    fonde sa décision, et s'arrête quand il n'est pas sûr. Ce qui reste ci-dessous est ce
-    qu'il n'a pas voulu trancher seul.</p>
+  <div class="haut">
+    <div>
+      <h1 id="h1"></h1>
+      <p class="lede" id="lede"></p>
+    </div>
+    <div class="lang">
+      <button id="fr" type="button">FR</button><button id="en" type="button">EN</button>
+    </div>
+  </div>
 
   <div class="chiffres" id="chiffres"></div>
   <div id="reglages"></div>
 
-  <h2 id="titreFile">File de revue</h2>
+  <h2 id="titreCompromis"></h2>
+  <div id="compromis"></div>
+
+  <h2 id="titreFile"></h2>
   <div id="file"></div>
 
-  <h2>Décisions humaines récentes</h2>
+  <h2 id="titreTraitees"></h2>
   <div id="traitees"></div>
 </main>
 
@@ -130,149 +166,326 @@ const api = async (chemin, corps) => {
   return r.json();
 };
 
-const LIBELLE = { approuver:"Approuver", complement:"Demander un complément", escalader:"Escalader à la conformité" };
-const pc = (x) => (x * 100).toFixed(1) + " %";
+/**
+ * Les deux langues dans un seul dictionnaire.
+ *
+ * L'outil est une pièce de portfolio montrée à des interlocuteurs anglophones, et le
+ * README est en anglais. Une interface uniquement française annulait le bénéfice.
+ */
+const T = {
+  fr: {
+    h1: "Triage des entrées en relation",
+    lede: "L'agent applique la procédure sur chaque dossier, cite la clause qui fonde sa décision, et s'arrête quand il n'est pas sûr. Ce qui reste ci-dessous est ce qu'il n'a pas voulu trancher seul.",
+    auto: "traité sans humain", enFile: "dans la file",
+    evitables: "escalades évitables", manquements: "manquements",
+    justesse: "justesse en automatique", accord: "l'humain confirme l'agent",
+    accordAttente: (n) => `${n} décision(s) avant de pouvoir conclure`,
+
+    seuilTitre: "Jusqu'où l'agent décide seul",
+    seuilQuoi: "En dessous de cette confiance, il passe la main plutôt que de trancher. Ce réglage appartient au métier, pas à qui écrit le code.",
+    seuilBas: "laisse passer, quitte à se tromper", seuilHaut: "ne décide que s'il est sûr",
+    seuilNom: "Seuil de confiance en dessous duquel l'agent passe la main",
+    attribution: (regle, seuil) =>
+      `Sur les escalades actuelles, <b>${regle}</b> viennent d'une règle qui en est sûre — le curseur ne les déplacera pas. Seules <b>${seuil}</b> dépendent de ce réglage.`,
+    refLabel: "Donner à l'agent les volumes habituels par secteur — sans eux, il envoie chez un analyste des dossiers parfaitement ordinaires",
+
+    compromisTitre: "Ce que coûte chaque réglage",
+    compromisQuoi: "Mesuré sur les 400 dossiers. Un manquement est une entrée en relation non contrôlée ; une escalade évitable est du temps analyste dépensé pour rien.",
+    colSeuil: "seuil", colAuto: "automatisé", colJuste: "justesse",
+    colManq: "manquements", colEvit: "escalades évitables",
+    avecRef: "avec référentiel sectoriel", sansRef: "sans référentiel",
+
+    fileTitre: (n) => `File de revue — ${n} dossier${n > 1 ? "s" : ""}`,
+    filePartielle: (m, n) => `File de revue — ${m} affichés sur ${n}`,
+    fileVide: "Rien à revoir. À ce réglage, l'agent tranche tout seul.",
+    legende: "Le point « · » marque la décision que l'agent proposait. Aucune action n'est présélectionnée : c'est toi qui tranches.",
+    parLaRegle: "Escaladé par la règle elle-même — l'agent est sûr que ce dossier relève d'un analyste.",
+    sousLeSeuil: (c, s) => `Confiance ${c.toFixed(2)} sous le seuil ${s.toFixed(2)} — décision laissée à un analyste`,
+    aucuneRegle: "Aucune règle déclenchée — la décision reposerait sur une absence de motif.",
+    motifChamp: "Motif de ta décision (facultatif)",
+    proposeTitre: "Ce que l'agent proposait",
+    nettete: "netteté", confiance: "confiance", declares: "déclarés", opere: "opère vers",
+
+    traiteesTitre: "Décisions humaines récentes",
+    traiteesVide: "Aucune décision humaine pour l'instant.",
+    proposait: "l'agent proposait :",
+    remise: "Vider les décisions enregistrées",
+    remiseConfirme: "Effacer toutes les décisions humaines enregistrées ?",
+
+    approuver: "Approuver", complement: "Demander un complément", escalader: "Escalader à la conformité",
+  },
+  en: {
+    h1: "Onboarding triage",
+    lede: "The agent applies the procedure to each file, cites the clause behind its decision, and stops when it isn't confident. What's left below is what it wouldn't decide alone.",
+    auto: "handled without a human", enFile: "in the queue",
+    evitables: "avoidable escalations", manquements: "breaches",
+    justesse: "correct when automatic", accord: "human agrees with the agent",
+    accordAttente: (n) => `${n} more decision(s) before this means anything`,
+
+    seuilTitre: "How far the agent decides alone",
+    seuilQuoi: "Below this confidence it hands the file over instead of deciding. This setting belongs to the business, not to whoever writes the code.",
+    seuilBas: "decides often, even when wrong", seuilHaut: "decides only when confident",
+    seuilNom: "Confidence bar below which the agent hands over",
+    attribution: (regle, seuil) =>
+      `Of the current escalations, <b>${regle}</b> come from a rule that is certain — the slider won't move those. Only <b>${seuil}</b> depend on this setting.`,
+    refLabel: "Give the agent the usual volumes per sector — without them it sends perfectly ordinary files to an analyst",
+
+    compromisTitre: "What each setting costs",
+    compromisQuoi: "Measured over the 400 files. A breach is an uncontrolled onboarding; an avoidable escalation is analyst time spent for nothing.",
+    colSeuil: "bar", colAuto: "automated", colJuste: "correct",
+    colManq: "breaches", colEvit: "avoidable escalations",
+    avecRef: "with sector reference", sansRef: "without sector reference",
+
+    fileTitre: (n) => `Review queue — ${n} file${n > 1 ? "s" : ""}`,
+    filePartielle: (m, n) => `Review queue — showing ${m} of ${n}`,
+    fileVide: "Nothing to review. At this setting the agent decides everything itself.",
+    legende: "The “·” marks what the agent proposed. No action is preselected — the call is yours.",
+    parLaRegle: "Escalated by the rule itself — the agent is certain this file belongs with an analyst.",
+    sousLeSeuil: (c, s) => `Confidence ${c.toFixed(2)} below the ${s.toFixed(2)} bar — decision left to an analyst`,
+    aucuneRegle: "No rule fired — the decision would rest on an absence of grounds.",
+    motifChamp: "Reason for your decision (optional)",
+    proposeTitre: "What the agent proposed",
+    nettete: "sharpness", confiance: "confidence", declares: "declared", opere: "operates in",
+
+    traiteesTitre: "Recent human decisions",
+    traiteesVide: "No human decision yet.",
+    proposait: "the agent proposed:",
+    remise: "Clear recorded decisions",
+    remiseConfirme: "Erase every recorded human decision?",
+
+    approuver: "Approve", complement: "Request more information", escalader: "Escalate to compliance",
+  },
+};
+
+/**
+ * Les valeurs du modèle, rendues lisibles.
+ *
+ * « particulier » et « conseil » sont des identifiants, pas de l'anglais. Les laisser
+ * traverser l'écran anglais faisait passer une donnée pour un oubli de traduction.
+ */
+const MOTS = {
+  fr: { particulier:"particulier", societe:"société",
+        "conseil":"conseil", "commerce de detail":"commerce de détail",
+        "restauration":"restauration", "immobilier":"immobilier",
+        "crypto-actifs":"crypto-actifs", "import-export":"import-export",
+        "art et antiquites":"art et antiquités",
+        identite:"pièce d'identité", domicile:"justificatif de domicile",
+        immatriculation:"immatriculation", structure:"structure de détention" },
+  en: { particulier:"individual", societe:"company",
+        "conseil":"consulting", "commerce de detail":"retail",
+        "restauration":"food service", "immobilier":"real estate",
+        "crypto-actifs":"crypto assets", "import-export":"import-export",
+        "art et antiquites":"art and antiques",
+        identite:"identity document", domicile:"proof of address",
+        immatriculation:"registration", structure:"ownership structure" },
+};
+const mot = (cle) => MOTS[langue][cle] ?? cle;
+
+let langue = localStorage.getItem("langue") === "en" ? "en" : "fr";
+const t = () => T[langue];
 
 let etat = null;
+let compromis = null;
 let occupe = false;
 
-function chiffres(c) {
+const pc = (x) => (x * 100).toFixed(1) + " %";
+
+function blocChiffres(c) {
+  const L = t();
   const cases = [
-    { v: pc(c.tauxAutomatisation), l: "traité sans humain" },
-    { v: c.enFile, l: "dans la file" },
-    { v: c.escaladesInutiles, l: "escalades évitables" },
-    { v: c.manquements, l: "manquements", alerte: c.manquements > 0 },
-    { v: pc(c.precisionAutomatisee), l: "justesse en automatique" },
+    { v: pc(c.tauxAutomatisation), l: L.auto },
+    { v: c.enFile, l: L.enFile },
+    { v: c.escaladesInutiles, l: L.evitables },
+    { v: c.manquements, l: L.manquements, alerte: c.manquements > 0 },
+    { v: pc(c.precisionAutomatisee), l: L.justesse },
   ];
-  if (c.tauxAccord !== null) cases.push({ v: pc(c.tauxAccord), l: "l'humain confirme l'agent" });
+  // Un taux d'accord sur deux décisions n'est pas un taux, c'est du bruit. On dit
+  // combien il en manque plutôt que d'afficher un chiffre qui trompe.
+  cases.push(c.assezDeReprises
+    ? { v: pc(c.tauxAccord), l: L.accord }
+    : { v: "—", l: L.accordAttente(c.manquePourConclure), attente: true });
 
   $("#chiffres").innerHTML = cases.map((x) =>
-    `<div class="chiffre${x.alerte ? " alerte" : ""}"><b>${esc(x.v)}</b><span>${esc(x.l)}</span></div>`).join("");
+    `<div class="chiffre${x.alerte ? " alerte" : ""}${x.attente ? " attente" : ""}">
+      <b>${esc(x.v)}</b><span>${esc(x.l)}</span></div>`).join("");
 }
 
-function reglages(c) {
+function blocReglages(c) {
+  const L = t();
   $("#reglages").innerHTML = `
-    <div class="reglage">
-      <div class="titre">Jusqu'où l'agent décide seul</div>
-      <div class="quoi">En dessous de cette confiance, il passe la main plutôt que de trancher.
-        Ce réglage appartient au métier, pas à qui écrit le code.</div>
+    <div class="carte">
+      <div class="titre">${esc(L.seuilTitre)}</div>
+      <div class="quoi">${esc(L.seuilQuoi)}</div>
       <div class="curseur">
-        <span>laisse passer, quitte à se tromper</span>
-        <input type="range" id="seuil" min="0.3" max="0.99" step="0.01" value="${c.seuil}" />
-        <span>ne décide que s'il est sûr</span>
+        <span class="bout">${esc(L.seuilBas)}</span>
+        <input type="range" id="seuil" min="0.3" max="0.99" step="0.01" value="${c.seuil}"
+          aria-label="${esc(L.seuilNom)}" />
+        <span class="bout">${esc(L.seuilHaut)}</span>
         <span class="val" id="seuilVal">${c.seuil.toFixed(2)}</span>
       </div>
+      <div class="attribution">${L.attribution(c.parLaRegle, c.parLeSeuil)}</div>
       <div class="bascule">
         <input type="checkbox" id="ref" ${c.referentielActif ? "checked" : ""} />
-        <label for="ref">Donner à l'agent les volumes habituels par secteur —
-          sans eux, il envoie chez un analyste des dossiers parfaitement ordinaires</label>
+        <label for="ref">${esc(L.refLabel)}</label>
       </div>
     </div>`;
 
   const seuil = $("#seuil");
   seuil.oninput = () => { $("#seuilVal").textContent = Number(seuil.value).toFixed(2); };
-  seuil.onchange = async () => { await envoyer("/api/seuil", { seuil: Number(seuil.value) }); };
-  $("#ref").onchange = async (e) => { await envoyer("/api/referentiel", { actif: e.target.checked }); };
+  seuil.onchange = () => envoyer("/api/seuil", { seuil: Number(seuil.value) });
+  $("#ref").onchange = (e) => envoyer("/api/referentiel", { actif: e.target.checked });
+}
+
+function blocCompromis(c) {
+  const L = t();
+  if (!compromis) { $("#compromis").innerHTML = ""; return; }
+  const jeu = c.referentielActif ? compromis.avec : compromis.sans;
+
+  const lignes = jeu.map((b) => {
+    const ici = Math.abs(b.seuil - c.seuil) < 0.005;
+    return `<tr class="${ici ? "ici" : ""}">
+      <td>${b.seuil.toFixed(2)}</td>
+      <td>${pc(b.tauxAutomatisation)}</td>
+      <td>${pc(b.precisionAutomatisee)}</td>
+      <td>${b.manquements}</td>
+      <td>${b.escaladesInutiles}</td>
+    </tr>`;
+  }).join("");
+
+  $("#compromis").innerHTML = `
+    <div class="carte">
+      <div class="quoi">${esc(L.compromisQuoi)}
+        — <em>${esc(c.referentielActif ? L.avecRef : L.sansRef)}</em></div>
+      <div class="defile">
+        <table class="compromis">
+          <thead><tr>
+            <th>${esc(L.colSeuil)}</th><th>${esc(L.colAuto)}</th><th>${esc(L.colJuste)}</th>
+            <th>${esc(L.colManq)}</th><th>${esc(L.colEvit)}</th>
+          </tr></thead>
+          <tbody>${lignes}</tbody>
+        </table>
+      </div>
+    </div>`;
 }
 
 function blocRegles(regles) {
+  const L = t();
   if (regles.length === 0) {
-    return `<div class="regle"><div class="constat" style="color:var(--muted)">Aucune règle
-      déclenchée — la décision reposerait sur une absence de motif.</div></div>`;
+    return `<div class="regle"><div class="constat" style="color:var(--muted)">${esc(L.aucuneRegle)}</div></div>`;
   }
   return regles.map((r) => `
     <div class="regle">
       <div class="code">${esc(r.code)}</div>
-      <div class="constat">${esc(r.constat)}<div class="clause">${esc(r.clause)}</div></div>
-      <div class="nettete">netteté ${r.nettete.toFixed(2)}</div>
+      <div class="constat">${esc(r.constat[langue])}<div class="clause">${esc(r.clause[langue])}</div></div>
+      <div class="nettete">${esc(L.nettete)} ${r.nettete.toFixed(2)}</div>
     </div>`).join("");
 }
 
 function dossier(l) {
+  const L = t();
   const c = l.cas, v = l.verdict;
-  const pays = c.activite.paysOperation.join(", ");
+  const langNum = langue === "fr" ? "fr-FR" : "en-GB";
   return `
     <div class="dossier" data-cas="${esc(c.id)}">
       <div class="entete">
-        <div>
-          <span class="nom">${esc(c.nom)}</span>
-          <span class="meta"> · ${esc(c.type)} · ${esc(c.paysResidence)}</span>
-        </div>
-        <div class="meta">${esc(c.id)} · confiance ${v.confiance.toFixed(2)}</div>
+        <div><span class="nom">${esc(c.nom)}</span>
+          <span class="meta"> · ${esc(mot(c.type))} · ${esc(c.paysResidence)}</span></div>
+        <div class="meta">${esc(c.id)} · ${esc(L.confiance)} ${v.confiance.toFixed(2)}</div>
       </div>
-      <div class="meta">${esc(c.activite.secteur)} · ${c.activite.volumeAnnuelDeclare.toLocaleString("fr-FR")} € déclarés · opère vers ${esc(pays)}</div>
+      <div class="meta">${esc(mot(c.activite.secteur))} · ${c.activite.volumeAnnuelDeclare.toLocaleString(langNum)} € ${esc(L.declares)} · ${esc(L.opere)} ${esc(c.activite.paysOperation.join(", "))}</div>
 
-      ${v.motifEscalade ? `<div class="motif">${esc(v.motifEscalade)}</div>` : ""}
-      ${!v.escalade ? `<div class="motif">Escaladé par la règle elle-même — l'agent est sûr que ce dossier relève d'un analyste.</div>` : ""}
-
+      <div class="motif">${esc(v.escalade
+        ? L.sousLeSeuil(v.motifEscalade.confiance, v.motifEscalade.seuil)
+        : L.parLaRegle)}</div>
       <div style="margin-top:12px">${blocRegles(v.regles)}</div>
 
       <div class="actions">
-        <input class="motif-champ" placeholder="Motif de ta décision (facultatif)" />
+        <input class="motif-champ" placeholder="${esc(L.motifChamp)}" />
         ${["approuver", "complement", "escalader"].map((d) => `
-          <button class="b${d === v.decisionBrute ? " propose" : ""}" data-d="${d}"
-            ${d === v.decisionBrute ? 'title="Ce que l\'agent proposait"' : ""}>${LIBELLE[d]}${d === v.decisionBrute ? " ·" : ""}</button>`).join("")}
+          <button type="button" class="b${d === v.decisionBrute ? " propose" : ""}" data-d="${d}"
+            ${d === v.decisionBrute ? `title="${esc(L.proposeTitre)}"` : ""}>${esc(L[d])}${d === v.decisionBrute ? " ·" : ""}</button>`).join("")}
       </div>
     </div>`;
 }
 
 function dessiner() {
+  const L = t();
   const { chiffres: c, file, traitees } = etat;
-  chiffres(c);
-  reglages(c);
 
-  const montres = file.length;
-  $("#titreFile").textContent = montres < c.enFile
-    ? `File de revue — ${montres} affichés sur ${c.enFile}`
-    : `File de revue — ${c.enFile} dossier${c.enFile > 1 ? "s" : ""}`;
+  document.documentElement.lang = langue;
+  $("#h1").textContent = L.h1;
+  $("#lede").textContent = L.lede;
+  $("#fr").className = langue === "fr" ? "on" : "";
+  $("#en").className = langue === "en" ? "on" : "";
+
+  blocChiffres(c);
+  blocReglages(c);
+  $("#titreCompromis").textContent = L.compromisTitre;
+  blocCompromis(c);
+
+  $("#titreFile").textContent = file.length < c.enFile
+    ? L.filePartielle(file.length, c.enFile) : L.fileTitre(c.enFile);
   $("#file").innerHTML = file.length === 0
-    ? `<div class="vide">Rien à revoir. À ce réglage, l'agent tranche tout seul.</div>`
-    : file.map(dossier).join("") +
-      `<div class="meta" style="margin-top:10px">Le point « · » marque la décision que
-       l'agent proposait. Aucune action n'est préselectionnée : c'est toi qui tranches.</div>`;
+    ? `<div class="vide">${esc(L.fileVide)}</div>`
+    : file.map(dossier).join("") + `<div class="meta" style="margin-top:10px">${esc(L.legende)}</div>`;
 
+  $("#titreTraitees").textContent = L.traiteesTitre;
   $("#traitees").innerHTML = traitees.length === 0
-    ? `<div class="vide">Aucune décision humaine pour l'instant.</div>`
+    ? `<div class="vide">${esc(L.traiteesVide)}</div>`
     : traitees.map((l) => {
         const r = l.reprise;
         const accord = r.retenue === r.propose;
         return `<div class="fait">
           <div>${esc(l.cas.nom)} <span class="meta">· ${esc(r.cas)}</span>
             ${r.motif ? `<div class="meta">« ${esc(r.motif)} »</div>` : ""}</div>
-          <div class="${accord ? "meta" : "desaccord"}" style="text-align:right;flex:0 0 auto">
-            ${esc(LIBELLE[r.retenue])}
-            ${accord ? "" : `<div class="meta">l'agent proposait : ${esc(LIBELLE[r.propose])}</div>`}
-          </div>
-        </div>`;
-      }).join("");
+          <div class="${accord ? "meta" : "desaccord"}" style="text-align:right">
+            ${esc(L[r.retenue])}
+            ${accord ? "" : `<div class="meta">${esc(L.proposait)} ${esc(L[r.propose])}</div>`}
+          </div></div>`;
+      }).join("") +
+      `<div style="margin-top:12px"><button type="button" class="b discret" id="remise">${esc(L.remise)}</button></div>`;
 
   brancher();
 }
 
 function brancher() {
+  const L = t();
   for (const bloc of document.querySelectorAll(".dossier")) {
     const id = bloc.dataset.cas;
     const champ = bloc.querySelector(".motif-champ");
     for (const bouton of bloc.querySelectorAll("button[data-d]")) {
-      bouton.onclick = async () => {
-        if (occupe) return;
-        await envoyer("/api/reprendre", { cas: id, decision: bouton.dataset.d, motif: champ.value });
-      };
+      bouton.onclick = () => envoyer("/api/reprendre", { cas: id, decision: bouton.dataset.d, motif: champ.value });
     }
   }
+  const remise = $("#remise");
+  if (remise) remise.onclick = () => {
+    if (confirm(L.remiseConfirme)) envoyer("/api/reinitialiser", {});
+  };
 }
 
 async function envoyer(chemin, corps) {
+  if (occupe) return;
   occupe = true;
   for (const b of document.querySelectorAll("button.b")) b.disabled = true;
-  const r = await api(chemin, corps);
-  occupe = false;
-  if (r.erreur) { alert(r.erreur); return; }
-  etat = r;
-  dessiner();
+  try {
+    const r = await api(chemin, corps);
+    if (r.erreur) { alert(r.erreur); return; }
+    etat = r;
+    dessiner();
+  } finally {
+    occupe = false;
+    for (const b of document.querySelectorAll("button.b")) b.disabled = false;
+  }
+}
+
+for (const l of ["fr", "en"]) {
+  $(`#${l}`).onclick = () => { langue = l; localStorage.setItem("langue", l); dessiner(); };
 }
 
 etat = await api("/api/etat");
+dessiner();
+// Le compromis complet arrive après le premier rendu : il informe, il ne bloque pas.
+compromis = await api("/api/compromis");
 dessiner();
 </script>
 </body>

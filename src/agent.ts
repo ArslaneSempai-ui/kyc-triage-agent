@@ -16,11 +16,16 @@ import { MULTIPLE_ANORMAL, netteteVolume } from "./referentiel.ts";
 import type { Referentiel } from "./referentiel.ts";
 import type { Cas, Decision } from "./cas.ts";
 
+/** Un texte dans les deux langues. Le moteur ne produit pas d'affichage : il produit
+ *  les deux versions, et l'écran choisit. Une phrase fabriquée côté serveur dans une
+ *  seule langue est un défaut d'architecture, pas un oubli de traduction. */
+export type Bilingue = { fr: string; en: string };
+
 export type Regle = {
   code: string;
   /** La clause de procédure appliquée. Sans elle, la décision est indéfendable. */
-  clause: string;
-  constat: string;
+  clause: Bilingue;
+  constat: Bilingue;
   impose: Decision;
   /**
    * Netteté du déclenchement, de 0 à 1.
@@ -40,7 +45,8 @@ export type Verdict = {
   decisionBrute: Decision;
   confiance: number;
   escalade: boolean;
-  motifEscalade: string | null;
+  /** Les nombres, pas la phrase : c'est l'écran qui la formule, dans sa langue. */
+  motifEscalade: { confiance: number; seuil: number } | null;
   regles: Regle[];
 };
 
@@ -58,8 +64,10 @@ function appliquer(c: Cas, referentiel?: Referentiel): Regle[] {
   if (s >= SEUIL_SANCTION_DOUTE) {
     regles.push({
       code: "R-SANCT",
-      clause: "PR-415 §2 — toute correspondance avec une liste de sanctions est revue avant entrée en relation",
-      constat: `Correspondance liste de sanctions à ${s.toFixed(2)}`,
+      clause: { fr: "PR-415 §2 — toute correspondance avec une liste de sanctions est revue avant entrée en relation",
+                en: "PR-415 §2 — every sanctions-list match is reviewed before onboarding" },
+      constat: { fr: `Correspondance liste de sanctions à ${s.toFixed(2)}`,
+                 en: `Sanctions-list match at ${s.toFixed(2)}` },
       impose: "escalader",
       // Nette aux extrêmes, floue au milieu : c'est la zone des homonymes.
       nettete: s >= SEUIL_SANCTION_CERTAIN ? 0.95 : (s - SEUIL_SANCTION_DOUTE) / (SEUIL_SANCTION_CERTAIN - SEUIL_SANCTION_DOUTE) * 0.5 + 0.2,
@@ -70,8 +78,9 @@ function appliquer(c: Cas, referentiel?: Referentiel): Regle[] {
   if (p >= SEUIL_SANCTION_CERTAIN) {
     regles.push({
       code: "R-PEP",
-      clause: "PR-415 §5 — une personne politiquement exposée relève de la vigilance renforcée",
-      constat: `Correspondance PPE à ${p.toFixed(2)}`,
+      clause: { fr: "PR-415 §5 — une personne politiquement exposée relève de la vigilance renforcée",
+                en: "PR-415 §5 — a politically exposed person requires enhanced due diligence" },
+      constat: { fr: `Correspondance PPE à ${p.toFixed(2)}`, en: `PEP match at ${p.toFixed(2)}` },
       impose: "escalader",
       nettete: 0.9,
     });
@@ -80,8 +89,9 @@ function appliquer(c: Cas, referentiel?: Referentiel): Regle[] {
   if (PAYS_A_RISQUE.has(c.paysResidence)) {
     regles.push({
       code: "R-PAYS",
-      clause: "PR-101 §7 — résidence dans une juridiction à haut risque",
-      constat: `Pays de résidence : ${c.paysResidence}`,
+      clause: { fr: "PR-101 §7 — résidence dans une juridiction à haut risque",
+                en: "PR-101 §7 — residence in a high-risk jurisdiction" },
+      constat: { fr: `Pays de résidence : ${c.paysResidence}`, en: `Country of residence: ${c.paysResidence}` },
       impose: "escalader",
       nettete: 1,
     });
@@ -91,8 +101,9 @@ function appliquer(c: Cas, referentiel?: Referentiel): Regle[] {
   if (risque.length > 0) {
     regles.push({
       code: "R-FLUX",
-      clause: "PR-101 §7 — flux déclarés vers une juridiction à haut risque",
-      constat: `Pays d'opération : ${risque.join(", ")}`,
+      clause: { fr: "PR-101 §7 — flux déclarés vers une juridiction à haut risque",
+                en: "PR-101 §7 — declared flows to a high-risk jurisdiction" },
+      constat: { fr: `Pays d'opération : ${risque.join(", ")}`, en: `Countries of operation: ${risque.join(", ")}` },
       impose: "escalader",
       nettete: 1,
     });
@@ -103,31 +114,36 @@ function appliquer(c: Cas, referentiel?: Referentiel): Regle[] {
     if (!piece || !piece.fournie) {
       regles.push({
         code: "R-PIECE",
-        clause: "PR-101 §2 — le dossier est complet avant toute décision",
-        constat: `Pièce absente : ${attendue}`,
+        clause: { fr: "PR-101 §2 — le dossier est complet avant toute décision",
+                  en: "PR-101 §2 — the file is complete before any decision" },
+        constat: { fr: `Pièce absente : ${attendue}`, en: `Missing document: ${attendue}` },
         impose: "complement", nettete: 1,
       });
       continue;
     }
     if (!piece.lisible) {
       regles.push({
-        code: "R-LISIB", clause: "PR-101 §2 — une pièce illisible est réputée non fournie",
-        constat: `Pièce illisible : ${attendue}`, impose: "complement",
+        code: "R-LISIB", clause: { fr: "PR-101 §2 — une pièce illisible est réputée non fournie",
+                  en: "PR-101 §2 — an unreadable document counts as not provided" },
+        constat: { fr: `Pièce illisible : ${attendue}`, en: `Unreadable document: ${attendue}` }, impose: "complement",
         // L'agent ne voit qu'un indicateur binaire ; le caractère lisible est un jugement.
         nettete: 0.7,
       });
     }
     if (piece.expireDans !== null && piece.expireDans <= 0) {
       regles.push({
-        code: "R-EXPIR", clause: "PR-101 §2 — une pièce d'identité expirée n'est pas recevable",
-        constat: `${attendue} expirée depuis ${Math.abs(piece.expireDans)} mois`,
+        code: "R-EXPIR", clause: { fr: "PR-101 §2 — une pièce d'identité expirée n'est pas recevable",
+                  en: "PR-101 §2 — an expired identity document is not acceptable" },
+        constat: { fr: `${attendue} expirée depuis ${Math.abs(piece.expireDans)} mois`,
+                   en: `${attendue} expired ${Math.abs(piece.expireDans)} months ago` },
         impose: "complement", nettete: 1,
       });
     }
     if (!piece.nomConcorde) {
       regles.push({
-        code: "R-NOM", clause: "PR-101 §3 — le nom porté par la pièce correspond au nom déclaré",
-        constat: `Nom discordant sur : ${attendue}`, impose: "complement", nettete: 0.85,
+        code: "R-NOM", clause: { fr: "PR-101 §3 — le nom porté par la pièce correspond au nom déclaré",
+                  en: "PR-101 §3 — the name on the document matches the declared name" },
+        constat: { fr: `Nom discordant sur : ${attendue}`, en: `Name mismatch on: ${attendue}` }, impose: "complement", nettete: 0.85,
       });
     }
   }
@@ -137,14 +153,17 @@ function appliquer(c: Cas, referentiel?: Referentiel): Regle[] {
     const gros = c.beneficiaires.filter((b) => b.part >= 25 && !b.identifie);
     if (gros.length > 0) {
       regles.push({
-        code: "R-BE25", clause: "PR-101 §5 — tout bénéficiaire détenant plus de 25 % est identifié",
-        constat: `${gros.length} bénéficiaire(s) au-dessus de 25 % non identifié(s)`,
+        code: "R-BE25", clause: { fr: "PR-101 §5 — tout bénéficiaire détenant plus de 25 % est identifié",
+                  en: "PR-101 §5 — every beneficial owner above 25 % is identified" },
+        constat: { fr: `${gros.length} bénéficiaire(s) au-dessus de 25 % non identifié(s)`,
+                   en: `${gros.length} beneficial owner(s) above 25 % not identified` },
         impose: "complement", nettete: 1,
       });
     } else if (couvert < 75) {
       regles.push({
-        code: "R-BECOUV", clause: "PR-101 §5 — la chaîne de détention est reconstituée",
-        constat: `Détention identifiée : ${couvert} %`,
+        code: "R-BECOUV", clause: { fr: "PR-101 §5 — la chaîne de détention est reconstituée",
+                  en: "PR-101 §5 — the ownership chain is reconstructed" },
+        constat: { fr: `Détention identifiée : ${couvert} %`, en: `Ownership identified: ${couvert} %` },
         impose: "complement", nettete: 0.8,
       });
     }
@@ -159,8 +178,10 @@ function appliquer(c: Cas, referentiel?: Referentiel): Regle[] {
     if (volume > VOLUME_ELEVE) {
       regles.push({
         code: "R-VOL",
-        clause: "PR-204 §1 — un volume déclaré sans rapport avec l'activité justifie un examen",
-        constat: `Volume annuel déclaré : ${volume.toLocaleString("fr-FR")} €`,
+        clause: { fr: "PR-204 §1 — un volume déclaré sans rapport avec l'activité justifie un examen",
+                  en: "PR-204 §1 — a declared volume unrelated to the activity warrants review" },
+        constat: { fr: `Volume annuel déclaré : ${volume.toLocaleString("fr-FR")} €`,
+                   en: `Declared annual volume: €${volume.toLocaleString("en-GB")}` },
         impose: "escalader", nettete: 0.35,
       });
     }
@@ -169,8 +190,10 @@ function appliquer(c: Cas, referentiel?: Referentiel): Regle[] {
     if (rapport >= MULTIPLE_ANORMAL) {
       regles.push({
         code: "R-VOL",
-        clause: "PR-204 §1 — un volume déclaré sans rapport avec l'activité justifie un examen",
-        constat: `${volume.toLocaleString("fr-FR")} € déclarés, soit ${rapport.toFixed(1)}× l'usage du secteur « ${c.activite.secteur} »`,
+        clause: { fr: "PR-204 §1 — un volume déclaré sans rapport avec l'activité justifie un examen",
+                  en: "PR-204 §1 — a declared volume unrelated to the activity warrants review" },
+        constat: { fr: `${volume.toLocaleString("fr-FR")} € déclarés, soit ${rapport.toFixed(1)}× l'usage du secteur « ${c.activite.secteur} »`,
+                   en: `€${volume.toLocaleString("en-GB")} declared, ${rapport.toFixed(1)}× the norm for “${c.activite.secteur}”` },
         impose: "escalader", nettete: netteteVolume(rapport),
       });
     }
@@ -179,8 +202,9 @@ function appliquer(c: Cas, referentiel?: Referentiel): Regle[] {
   const surveilles = c.activite.paysOperation.filter((x) => PAYS_SOUS_SURVEILLANCE.has(x));
   if (surveilles.length > 0 && c.activite.volumeAnnuelDeclare > VOLUME_ELEVE / 2) {
     regles.push({
-      code: "R-JURID", clause: "PR-415 §9 — juridiction sous surveillance combinée à un volume significatif",
-      constat: `Opérations vers ${surveilles.join(", ")}`,
+      code: "R-JURID", clause: { fr: "PR-415 §9 — juridiction sous surveillance combinée à un volume significatif",
+                en: "PR-415 §9 — monitored jurisdiction combined with a significant volume" },
+      constat: { fr: `Opérations vers ${surveilles.join(", ")}`, en: `Operations into ${surveilles.join(", ")}` },
       impose: "escalader", nettete: 0.5,
     });
   }
@@ -239,9 +263,7 @@ export function trier(c: Cas, seuil = 0.7, referentiel?: Referentiel): Verdict {
     decisionBrute: brute,
     confiance: Number(c0.toFixed(3)),
     escalade: sousLeSeuil,
-    motifEscalade: sousLeSeuil
-      ? `Confiance ${c0.toFixed(2)} sous le seuil ${seuil.toFixed(2)} — décision laissée à un analyste`
-      : null,
+    motifEscalade: sousLeSeuil ? { confiance: Number(c0.toFixed(2)), seuil } : null,
     regles,
   };
 }

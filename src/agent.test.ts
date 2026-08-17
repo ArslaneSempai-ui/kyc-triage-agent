@@ -39,7 +39,7 @@ test("une correspondance ambiguë escalade PAR manque de confiance", () => {
   const v = trier(c, 0.7, REFERENTIEL_SECTORIEL);
   assert.equal(v.decision, "escalader");
   assert.equal(v.escalade, true, "c'est la zone des homonymes : l'agent doit passer la main");
-  assert.ok(v.motifEscalade?.includes("Confiance"));
+  assert.ok(v.motifEscalade !== null, "le motif porte les nombres qui expliquent l'arrêt");
 });
 
 test("la décision la plus grave l'emporte — on ne réclame pas une pièce à un profil sous sanction", () => {
@@ -50,15 +50,37 @@ test("la décision la plus grave l'emporte — on ne réclame pas une pièce à 
   assert.equal(v.decisionBrute, "escalader");
 });
 
-test("chaque règle déclenchée cite la clause qui la fonde", () => {
+test("chaque règle déclenchée cite la clause qui la fonde, dans les deux langues", () => {
   const c = base();
   c.pieces[1].fournie = false;
   const v = trier(c, 0.7, REFERENTIEL_SECTORIEL);
   assert.ok(v.regles.length > 0);
   for (const r of v.regles) {
-    assert.ok(r.clause.length > 10, `règle ${r.code} sans clause`);
-    assert.ok(r.constat.length > 0, `règle ${r.code} sans constat`);
+    for (const langue of ["fr", "en"] as const) {
+      assert.ok(r.clause[langue].length > 10, `règle ${r.code} sans clause ${langue}`);
+      assert.ok(r.constat[langue].length > 0, `règle ${r.code} sans constat ${langue}`);
+    }
   }
+});
+
+test("aucune règle ne laisse échapper du français dans la version anglaise", () => {
+  // Le moteur produisait ses phrases en français ; l'écran anglais les affichait telles
+  // quelles. Ce test empêche la régression sur l'ensemble du jeu, pas sur un cas choisi.
+  const francais = /\b(dossier|décision|seuil|analyste|pièce|bénéficiaire|déclaré|opère)\b/i;
+  for (const c of genererCas(400)) {
+    for (const r of trier(c, 0.7, REFERENTIEL_SECTORIEL).regles) {
+      assert.ok(!francais.test(r.clause.en), `clause ${r.code} encore en français : ${r.clause.en}`);
+      assert.ok(!francais.test(r.constat.en), `constat ${r.code} encore en français : ${r.constat.en}`);
+    }
+  }
+});
+
+test("le motif d'escalade est un couple de nombres, pas une phrase", () => {
+  const c = base();
+  c.criblage.correspondanceSanction = 0.6;
+  const v = trier(c, 0.7, REFERENTIEL_SECTORIEL);
+  assert.equal(typeof v.motifEscalade?.confiance, "number");
+  assert.equal(v.motifEscalade?.seuil, 0.7);
 });
 
 test("sans référentiel, un volume ordinaire du secteur déclenche quand même une alerte floue", () => {

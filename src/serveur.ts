@@ -2,6 +2,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { readFileSync } from "node:fs";
 import {
   demarrer, fileDAttente, traitees, reprendre, reglerSeuil, basculerReferentiel, chiffres,
+  reinitialiser,
 } from "./file.ts";
 import { balayer, mesurer } from "./mesurer.ts";
 import { lireCas } from "./file.ts";
@@ -59,6 +60,11 @@ const serveur = createServer(async (req, res) => {
       const d = String(decision ?? "") as Decision;
       if (!DECISIONS.has(d)) return json(res, { erreur: `Décision inconnue : ${decision}` }, 400);
       reprendre(String(cas ?? ""), d, String(motif ?? ""));
+      return json(res, { chiffres: chiffres(), file: fileDAttente(), traitees: traitees() });
+    }
+
+    if (url.pathname === "/api/reinitialiser" && req.method === "POST") {
+      reinitialiser();
       return json(res, { chiffres: chiffres(), file: fileDAttente(), traitees: traitees() });
     }
 

@@ -123,10 +123,26 @@ export function basculerReferentiel(actif: boolean): boolean {
  * très haut sur une file volumineuse signifie que l'agent escalade des dossiers qu'il
  * savait traiter — c'est-à-dire qu'il coûte du temps sans rien sécuriser.
  */
+/** En deçà de ce nombre de décisions humaines, un taux d'accord ne veut rien dire. */
+export const ASSEZ_DE_REPRISES = 10;
+
 export function chiffres() {
   const b = mesurer(cas, etat.seuil, referentiel());
-  const enFile = cas.map(ligne).filter((l) => l.verdict.decision === "escalader" && !l.reprise).length;
+  const lignes = cas.map(ligne);
+  const enFile = lignes.filter((l) => l.verdict.decision === "escalader" && !l.reprise).length;
   const accords = etat.reprises.filter((r) => r.retenue === r.propose).length;
+
+  /*
+   * D'où viennent les escalades, vraiment.
+   *
+   * Le curseur ne déplace que la seconde catégorie. Sans ce partage, un utilisateur le
+   * traîne d'un bout à l'autre, ne voit presque rien bouger, et conclut que l'écran est
+   * cassé — alors que la réponse est que la plupart des dossiers sont escaladés par une
+   * règle qui en est sûre.
+   */
+  const escalades = lignes.filter((l) => l.verdict.decision === "escalader");
+  const parLaRegle = escalades.filter((l) => !l.verdict.escalade).length;
+  const parLeSeuil = escalades.length - parLaRegle;
 
   return {
     seuil: etat.seuil,
@@ -138,10 +154,20 @@ export function chiffres() {
     manquements: b.manquements,
     escaladesInutiles: b.escaladesInutiles,
     enFile,
+    parLaRegle,
+    parLeSeuil,
     reprises: etat.reprises.length,
     accords,
+    assezDeReprises: etat.reprises.length >= ASSEZ_DE_REPRISES,
+    manquePourConclure: Math.max(0, ASSEZ_DE_REPRISES - etat.reprises.length),
     tauxAccord: etat.reprises.length === 0 ? null : accords / etat.reprises.length,
   };
+}
+
+/** Repartir d'une file vierge — utile entre deux démonstrations. */
+export function reinitialiser(): void {
+  etat.reprises = [];
+  sauver();
 }
 
 export const lireCas = () => cas;

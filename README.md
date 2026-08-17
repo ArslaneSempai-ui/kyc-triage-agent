@@ -41,7 +41,7 @@ size of the pile on my desk.
 
 The queue is sorted **least confident first** — that's where a human opinion is worth the
 most. Each file shows what the agent saw, which rules fired, the clause behind each one,
-and how sharp the observation was.
+and how sharp the observation was. The interface runs in French or English.
 
 No action is visually promoted. An early version filled *Approve* in green, which made
 approval the reflex click on a compliance queue — precisely backwards. Now only the
@@ -49,7 +49,13 @@ agent's own proposal is marked, and quietly: it informs, it doesn't invite.
 
 When a human overrides, the disagreement is recorded. That's the only material that will
 ever support the sentence "the agent is systematically wrong here" instead of "the
-analysts are complaining".
+analysts are complaining". The agreement rate stays hidden until ten decisions exist —
+a rate over two samples is noise wearing a percentage sign.
+
+The slider carries its own honesty check. Most escalations come from rules that are
+*certain*, and no amount of dragging will move those; the screen says how many of the
+current escalations the setting actually governs. A control that appears to do nothing
+teaches people the tool is broken.
 
 ---
 
@@ -138,6 +144,8 @@ its own marking scheme scores 100 % and demonstrates nothing.
   [compliance-document-search](https://github.com/ArslaneSempai-ui/compliance-document-search).
 - **No learning from overrides.** They're recorded, not yet used. Closing that loop needs
   far more human decisions than a demonstration produces.
+- **No pagination.** The queue shows the 25 least-confident files of however many are
+  waiting, and says so.
 - **Synthetic data.** Every conclusion above holds for this generator. On a real book of
   business, all of it must be re-measured — which is the first finding of the previous
   project, and the reason the measurement harness ships with the tool.
