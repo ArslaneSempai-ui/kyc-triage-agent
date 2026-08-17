@@ -1,11 +1,11 @@
 /**
  * La file de revue, et ce qu'un humain en fait.
  *
- * L'escalade ne sert à rien si la décision humaine tombe dans le vide. Chaque reprise
- * est enregistrée avec son motif : c'est la seule matière qui permettra un jour de dire
- * « l'agent se trompe systématiquement ici » plutôt que « les analystes râlent ».
+ * Escalation is worthless if the human decision falls into a void. Every override is
+ * recorded with its reason: that is the only material which will one day support "the
+ * agent is systematically wrong here" rather than "the analysts are complaining".
  *
- * Rien ne sort de la machine. L'état tient dans un fichier.
+ * Nothing leaves the machine. The state fits in one file.
  */
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -37,8 +37,8 @@ type Etat = {
 /**
  * Une fonction, pas une constante.
  *
- * Un objet partagé se fait modifier par le premier appelant et le suivant hérite des
- * dégâts. Le piège a déjà coûté une session entière sur le projet précédent.
+ * A shared object gets modified by the first caller and the next one inherits the damage.
+ * That trap already cost a whole session on the previous project.
  */
 const vide = (): Etat => ({ seuil: 0.7, referentielActif: true, reprises: [] });
 
@@ -76,7 +76,7 @@ export function fileDAttente(limite = 25): Ligne[] {
   return cas
     .map(ligne)
     .filter((l) => l.verdict.decision === "escalader" && !l.reprise)
-    // Le plus incertain d'abord : c'est là que l'avis humain vaut le plus cher.
+    // Least certain first: that is where a human opinion is worth the most.
     .sort((a, b) => a.verdict.confiance - b.verdict.confiance)
     .slice(0, limite);
 }
@@ -117,13 +117,13 @@ export function basculerReferentiel(actif: boolean): boolean {
 }
 
 /**
- * Les chiffres de tête.
+ * The headline figures.
  *
- * `accord` compte les fois où l'humain a confirmé ce que l'agent proposait. Un accord
- * très haut sur une file volumineuse signifie que l'agent escalade des dossiers qu'il
- * savait traiter — c'est-à-dire qu'il coûte du temps sans rien sécuriser.
+ * `accord` counts the times a human confirmed what the agent proposed. Very high agreement
+ * on a large queue means the agent is escalating files it knew how to handle — costing
+ * time while securing nothing.
  */
-/** En deçà de ce nombre de décisions humaines, un taux d'accord ne veut rien dire. */
+/** Below this many human decisions, an agreement rate means nothing. */
 export const ASSEZ_DE_REPRISES = 10;
 
 export function chiffres() {
@@ -133,12 +133,11 @@ export function chiffres() {
   const accords = etat.reprises.filter((r) => r.retenue === r.propose).length;
 
   /*
-   * D'où viennent les escalades, vraiment.
+   * Where the escalations actually come from.
    *
-   * Le curseur ne déplace que la seconde catégorie. Sans ce partage, un utilisateur le
-   * traîne d'un bout à l'autre, ne voit presque rien bouger, et conclut que l'écran est
-   * cassé — alors que la réponse est que la plupart des dossiers sont escaladés par une
-   * règle qui en est sûre.
+   * The slider moves only the second category. Without that split a user drags it end to
+   * end, sees almost nothing move, and concludes the screen is broken — when the answer is
+   * that most files are escalated by a rule that is sure of itself.
    */
   const escalades = lignes.filter((l) => l.verdict.decision === "escalader");
   const parLaRegle = escalades.filter((l) => !l.verdict.escalade).length;
@@ -164,7 +163,7 @@ export function chiffres() {
   };
 }
 
-/** Repartir d'une file vierge — utile entre deux démonstrations. */
+/** Start from an empty queue — useful between demonstrations. */
 export function reinitialiser(): void {
   etat.reprises = [];
   sauver();

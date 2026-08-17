@@ -1,15 +1,15 @@
 /**
- * Le contexte métier que l'agent n'avait pas.
+ * The business context the agent did not have.
  *
- * Première version : l'agent appliquait un plafond unique de 1,5 M€ à tous les secteurs.
- * Résultat, il envoyait chez un analyste 125 dossiers parfaitement ordinaires — un
- * import-export à 3 M€ n'a rien d'anormal, un cabinet de conseil à 3 M€ en a beaucoup.
+ * First version: the agent applied a single €1.5M ceiling to every sector. The result was
+ * 125 perfectly ordinary files sent to an analyst — an import-export business at €3M is
+ * unremarkable, a consultancy at €3M is very remarkable indeed.
  *
- * Ce que la mesure a montré, et qui est le vrai enseignement du projet : ce n'est pas le
- * seuil d'escalade qui coûtait cher, c'est une règle mal informée. On ne règle pas ça en
- * bougeant un curseur. La confiance basse était le symptôme correct d'un manque réel.
+ * What the measurement showed, and it is the real lesson of the project: what cost money
+ * was not the escalation threshold, it was a badly informed rule. You do not fix that by
+ * dragging a slider. The low confidence was the correct symptom of a real gap.
  *
- * Les valeurs ci-dessous sont approximatives, comme l'est tout référentiel réel : elles
+ * The values below are approximate, as every real reference table is: they
  * viennent d'une moyenne de place, pas des dossiers qu'on est en train de juger.
  */
 
@@ -25,14 +25,14 @@ export const REFERENTIEL_SECTORIEL: Referentiel = new Map([
   ["art et antiquites", 820_000],
 ]);
 
-/** Au-delà de ce multiple du volume habituel du secteur, le montant mérite un examen. */
+/** Above this multiple of the sector's usual volume, the amount deserves a look. */
 export const MULTIPLE_ANORMAL = 3.5;
 
 /**
- * Netteté du constat de volume.
+ * How sharp the volume finding is.
  *
- * Un dossier à douze fois la norme du secteur est un constat net. À trois fois et demie
- * tout juste, c'est un jugement — et l'agent doit le dire plutôt que de trancher.
+ * A file at twelve times the sector norm is a sharp finding. At barely three and a half
+ * times it is a judgement — and the agent should say so rather than decide.
  */
 export function netteteVolume(rapport: number, multiple = MULTIPLE_ANORMAL): number {
   const net = Math.max(multiple + 0.5, 6);

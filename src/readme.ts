@@ -76,11 +76,11 @@ const chosen = (() => {
   const bs = bandes(tirages());
   const f = (x: number) => (x < 100 ? x.toFixed(2) : Math.round(x).toLocaleString("en-GB"));
   const verdict: Record<string, string> = {
-    "décide les manquements": "**Decides breaches**, and the draws agree where",
-    "décide, frontière sous le bruit": "**Decides breaches**; the boundary is under the noise",
-    "ne coûte que du temps analyste": "Costs analyst time only",
-    "dormant derrière le référentiel": "**Dormant** — inert here, decisive without the sector table",
-    "sans effet": "No effect on either cost",
+    "decides the breaches": "**Decides breaches**, and the draws agree where",
+    "decides, boundary under the noise": "**Decides breaches**; the boundary is under the noise",
+    "costs analyst time only": "Costs analyst time only",
+    "dormant behind the reference table": "**Dormant** — inert here, decisive without the sector table",
+    "no effect": "No effect on either cost",
   };
   const t = table(
     ["Constant", "In use", "Plausible range", `Breaches per ${800} files, low → high`, "Verdict"],
@@ -90,14 +90,14 @@ const chosen = (() => {
       // A dormant constant's figure in the published configuration is 0.0 → 0.0, which
       // beside the word "decisive" reads as a contradiction. Show the one that makes the
       // verdict legible, marked for what it is.
-      b.verdict === "dormant derrière le référentiel"
+      b.verdict === "dormant behind the reference table"
         ? b.auxExtremesSansTable[0].toFixed(1) + " → " + b.auxExtremesSansTable[1].toFixed(1) + " †"
         : b.auxExtremes[0].toFixed(1) + " → " + b.auxExtremes[1].toFixed(1),
       verdict[b.verdict],
     ]),
   );
-  const solides = bs.filter((b) => b.verdict === "décide les manquements").length;
-  const flous = bs.filter((b) => b.verdict === "décide, frontière sous le bruit").length;
+  const solides = bs.filter((b) => b.verdict === "decides the breaches").length;
+  const flous = bs.filter((b) => b.verdict === "decides, boundary under the noise").length;
   return `Measured over ${GRAINES.length} independent draws of 800 files. What no source says ` +
     `about each of them:\n\n` +
     bs.map((b) => `- \`${b.reglage}\` — ${AVEU[b.reglage]}`).join("\n") +

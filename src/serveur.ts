@@ -25,7 +25,7 @@ function corps(req: IncomingMessage): Promise<Record<string, unknown>> {
     let brut = "";
     req.on("data", (bloc) => {
       brut += bloc;
-      if (brut.length > 100_000) rejeter(new Error("requête trop volumineuse"));
+      if (brut.length > 100_000) rejeter(new Error("request too large"));
     });
     req.on("end", () => {
       try { resoudre(brut ? JSON.parse(brut) : {}); } catch (e) { rejeter(e); }
@@ -42,7 +42,7 @@ const serveur = createServer(async (req, res) => {
   try {
     if (url.pathname === "/") {
       const html = readFileSync(new URL("./ui.html", import.meta.url).pathname, "utf8");
-      // Le fichier change pendant le développement : jamais de copie périmée.
+      // The file changes during development: never serve a stale copy.
       res.writeHead(200, {
         "content-type": "text/html; charset=utf-8",
         "cache-control": "no-store, must-revalidate",
@@ -65,7 +65,7 @@ const serveur = createServer(async (req, res) => {
     if (url.pathname === "/api/reprendre" && req.method === "POST") {
       const { cas, decision, motif } = await corps(req);
       const d = String(decision ?? "") as Decision;
-      if (!DECISIONS.has(d)) return json(res, { erreur: `Décision inconnue : ${decision}` }, 400);
+      if (!DECISIONS.has(d)) return json(res, { erreur: `Unknown decision: ${decision}` }, 400);
       reprendre(String(cas ?? ""), d, String(motif ?? ""));
       return json(res, { chiffres: chiffres(), file: fileDAttente(), traitees: traitees() });
     }
@@ -87,7 +87,7 @@ const serveur = createServer(async (req, res) => {
       return json(res, { chiffres: chiffres(), file: fileDAttente(), traitees: traitees() });
     }
 
-    /** Le compromis complet, pour l'écran comme pour le README. */
+    /** The full trade-off, for the screen and for the README alike. */
     if (url.pathname === "/api/compromis") {
       const cas = lireCas();
       return json(res, {
@@ -99,19 +99,19 @@ const serveur = createServer(async (req, res) => {
 
     res.writeHead(404).end("introuvable");
   } catch (erreur) {
-    // L'erreur remonte à l'écran plutôt que dans un journal que personne ne lit.
+    // The error reaches the screen rather than a log nobody reads.
     json(res, { erreur: erreur instanceof Error ? erreur.message : String(erreur) }, 500);
   }
 });
 
 demarrer(400);
 /*
- * On écoute la boucle locale, pas toutes les interfaces.
+ * Bind the loopback interface, not every interface.
  *
- * `listen(PORT)` seul fait écouter Node sur `::` — l'outil devient joignable par
- * n'importe qui sur le même réseau. Sur le wifi d'un café, ça expose un écran qui lit
+ * `listen(PORT)` on its own has Node listen on `::` — the tool becomes reachable by
+ * anyone on the same network. On a café wifi that exposes a screen which reads
  * des dossiers clients.
  */
 serveur.listen(PORT, "127.0.0.1", () => {
-  console.log(`Triage des entrées en relation → http://localhost:${PORT}`);
+  console.log(`Onboarding triage → http://localhost:${PORT}`);
 });

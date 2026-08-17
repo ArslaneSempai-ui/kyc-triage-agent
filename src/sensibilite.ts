@@ -158,11 +158,11 @@ export type Bande = {
    */
   auxExtremesSansTable: [number, number];
   verdict:
-    | "décide les manquements"
-    | "décide, frontière sous le bruit"
-    | "ne coûte que du temps analyste"
-    | "dormant derrière le référentiel"
-    | "sans effet";
+    | "decides the breaches"
+    | "decides, boundary under the noise"
+    | "costs analyst time only"
+    | "dormant behind the reference table"
+    | "no effect";
 };
 
 const moyenne = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
@@ -261,12 +261,12 @@ export function bande(
       moyenne(mesures(bas, false).map((b) => b.manquements)),
       moyenne(mesures(haut, false).map((b) => b.manquements)),
     ],
-    verdict: decideManquements && solide ? "décide les manquements"
-      : accordExtreme * 2 >= jeux.length ? "décide, frontière sous le bruit"
-      : decideManquements ? "décide, frontière sous le bruit"
-      : decideEscalades ? "ne coûte que du temps analyste"
-      : dormant ? "dormant derrière le référentiel"
-      : "sans effet",
+    verdict: decideManquements && solide ? "decides the breaches"
+      : accordExtreme * 2 >= jeux.length ? "decides, boundary under the noise"
+      : decideManquements ? "decides, boundary under the noise"
+      : decideEscalades ? "costs analyst time only"
+      : dormant ? "dormant behind the reference table"
+      : "no effect",
   };
 }
 
@@ -281,13 +281,13 @@ export function conseil(b: Bande): string {
   const extremes = `Across the whole range the breach rate runs ${b.auxExtremes[0].toFixed(1)} (at ${f(bas)}) to ${b.auxExtremes[1].toFixed(1)} (at ${f(haut)}) per ${PAR_TIRAGE} files.`;
 
   switch (b.verdict) {
-    case "décide les manquements":
+    case "decides the breaches":
       return `Decides the expensive error, and ${b.accord} of ${GRAINES.length} draws agree on where. No draw changes its breach count between ${f(b.deManquements[0])} and ${f(b.deManquements[1])}. ${extremes} Worth arguing about.`;
-    case "décide, frontière sous le bruit":
+    case "decides, boundary under the noise":
       return `It costs breaches — ${b.accordExtreme} of ${GRAINES.length} draws lose files at the far end of the range. ${extremes} What this measurement cannot give you is *where* it starts costing: only ${b.accord} of ${GRAINES.length} draws see the edge near ${f(b.deManquements[1])}, so that number belongs to the sample. Set it on the cost, not on this edge.`;
-    case "ne coûte que du temps analyste":
+    case "costs analyst time only":
       return `No draw loses a file to it anywhere in ${f(bas)}–${f(haut)}; it buys and sells analyst time between ${f(b.dEscalades[0])} and ${f(b.dEscalades[1])}. An operational decision, not a compliance one.`;
-    case "dormant derrière le référentiel":
+    case "dormant behind the reference table":
       return `Changes nothing here — but only because the sector reference covers every file. Take the table away and the same sweep runs ${b.auxExtremesSansTable[0].toFixed(1)} to ${b.auxExtremesSansTable[1].toFixed(1)} breaches per ${PAR_TIRAGE} files. Add one sector the table does not list and this constant decides those files. Worth setting before that happens, not after.`;
     default:
       return `Changes nothing across ${f(bas)}–${f(haut)}, on either cost. Not worth defending in a review.`;

@@ -1,12 +1,12 @@
 /**
- * Les dossiers d'entrée en relation, et leur vérité terrain.
+ * The onboarding files, and their ground truth.
  *
- * Tout est synthétique et assumé comme tel. Un jeu réel ne peut pas quitter une banque,
- * et s'entraîner à mesurer sur des dossiers qu'on ne peut pas publier revient à ne rien
+ * Everything is synthetic and says so. A real set cannot leave a bank, and learning to
+ * measure on files nobody can publish amounts to having nothing
  * pouvoir montrer.
  *
- * Le tirage est déterministe : sans graine fixe, deux mesures ne se comparent pas et on
- * finit par attribuer à un changement de code ce qui n'était qu'un autre échantillon.
+ * The draw is deterministic: without a fixed seed two measurements cannot be compared,
+ * and you end up crediting a code change for what was only a different sample.
  */
 
 export type Decision = "approuver" | "complement" | "escalader";
@@ -15,9 +15,9 @@ export type Piece = {
   type: "identite" | "domicile" | "immatriculation" | "structure";
   fournie: boolean;
   lisible: boolean;
-  /** Nombre de mois avant expiration. Négatif = déjà expirée. */
+  /** Months until expiry. Negative means already expired. */
   expireDans: number | null;
-  /** Le nom porté par la pièce correspond-il au nom déclaré ? */
+  /** Does the name on the document match the declared name? */
   nomConcorde: boolean;
 };
 
@@ -32,16 +32,16 @@ export type Cas = {
   beneficiaires: Beneficiaire[];
   criblage: {
     /**
-     * Force de la correspondance avec une liste (0 à 1). Le point important du métier :
+     * Strength of the match against a list, 0 to 1. The point that matters in practice:
      * une correspondance n'est jamais binaire. « Mohamed Ali » contre une liste de
-     * sanctions renvoie des dizaines de quasi-homonymes, et c'est là que se joue le
+     * sanctions list returns dozens of near-namesakes, and that is where the
      * travail — pas sur les cas nets.
      */
     correspondanceSanction: number;
     correspondancePep: number;
   };
   activite: { secteur: string; volumeAnnuelDeclare: number; paysOperation: string[] };
-  /** Ce qu'un analyste expérimenté aurait décidé. Sert uniquement à noter l'agent. */
+  /** What an experienced analyst would have decided. Used only to score the agent. */
   verite: Decision;
 };
 
@@ -64,8 +64,8 @@ const NOMS = ["Berger", "Okonkwo", "Vasquez", "Lindqvist", "Haddad", "Novak", "F
 const SUFFIXES = ["Trading", "Holdings", "Consulting", "Partners", "Logistics", "Ventures"];
 
 /**
- * Générateur congruentiel. Trente ans d'âge et parfaitement suffisant : on veut un
- * échantillon reproductible, pas de la cryptographie.
+ * A linear congruential generator. Thirty years old and perfectly sufficient: what is
+ * wanted is a reproducible sample, not cryptography.
  */
 function tirage(graine: number) {
   let etat = graine >>> 0;
@@ -85,11 +85,11 @@ function piecesAttendues(type: Cas["type"]): Piece["type"][] {
 }
 
 /**
- * La vérité terrain suit la procédure, dans l'ordre où un analyste l'applique.
+ * The ground truth follows the procedure, in the order an analyst applies it.
  *
  * L'ordre compte et n'est pas arbitraire : une correspondance de sanction l'emporte sur
- * une pièce manquante. Réclamer un justificatif de domicile à quelqu'un qui figure sur
- * une liste, c'est le prévenir.
+ * a missing document. Asking someone who appears on a list for a proof of address is
+ * tipping them off.
  */
 function decisionAttendue(c: Omit<Cas, "verite">): Decision {
   if (c.criblage.correspondanceSanction >= 0.85) return "escalader";
@@ -111,7 +111,7 @@ function decisionAttendue(c: Omit<Cas, "verite">): Decision {
 
   if (c.type === "societe") {
     const couvert = c.beneficiaires.filter((b) => b.identifie).reduce((s, b) => s + b.part, 0);
-    // Seuil réglementaire usuel : tout détenteur de plus de 25 % doit être identifié.
+    // The usual regulatory threshold: any holder above 25 % must be identified.
     if (couvert < 75) return "complement";
     if (c.beneficiaires.some((b) => b.part >= 25 && !b.identifie)) return "complement";
   }
@@ -167,8 +167,8 @@ function unCas(r: () => number, n: number): Cas {
     id: `C-${String(n).padStart(4, "0")}`,
     type, nom, paysResidence, pieces, beneficiaires,
     criblage: {
-      // Le gros des dossiers ne ressemble à rien. Une minorité ressemble un peu, et
-      // c'est cette minorité qui coûte cher.
+      // The bulk of files look like nothing at all. A minority look a little like
+      // something, and that minority is what costs money.
       correspondanceSanction: r() < 0.08 ? entre(r, 0.5, 0.99) : entre(r, 0, 0.35),
       correspondancePep: r() < 0.1 ? entre(r, 0.5, 0.99) : entre(r, 0, 0.35),
     },

@@ -1,14 +1,14 @@
 /**
  * Noter l'agent.
  *
- * La justesse globale n'intéresse personne ici. Deux erreurs portent le même nom et
- * n'ont pas le même prix :
+ * Overall accuracy interests nobody here. Two errors share a name and do not share a
+ * price:
  *
- *   - escalader un dossier qui aurait pu être traité seul → du temps analyste perdu ;
- *   - approuver seul un dossier qui devait remonter → une entrée en relation non
- *     contrôlée, c'est-à-dire le manquement.
+ *   - escalating a file that could have been handled alone → analyst time wasted;
+ *   - approving alone a file that had to go up → an uncontrolled onboarding, which is
+ *     the breach.
  *
- * Les compter ensemble revient à masquer la seule qui coûte cher.
+ * Counting them together hides the only one that costs money.
  */
 
 import { genererCas } from "./cas.ts";
@@ -21,15 +21,15 @@ import type { Cas, Decision } from "./cas.ts";
 export type Bilan = {
   seuil: number;
   total: number;
-  /** Dossiers tranchés sans intervention humaine. */
+  /** Files decided without human intervention. */
   automatises: number;
   tauxAutomatisation: number;
-  /** Parmi les dossiers automatisés, ceux dont la décision était la bonne. */
+  /** Among the automated files, those whose decision was the right one. */
   justesAutomatises: number;
   precisionAutomatisee: number;
-  /** L'erreur grave : décidé seul, alors qu'il fallait escalader. */
+  /** The serious error: decided alone when it had to be escalated. */
   manquements: number;
-  /** L'erreur coûteuse mais bénigne : envoyé à un humain pour rien. */
+  /** The costly but benign error: sent to a human for nothing. */
   escaladesInutiles: number;
   parDecision: Record<Decision, { attendu: number; obtenu: number; justes: number }>;
 };
@@ -66,7 +66,7 @@ export function mesurer(cas: Cas[], seuil: number, referentiel?: Referentiel, k:
   };
 }
 
-/** Le compromis, seuil par seuil. C'est la seule sortie qui mérite d'être publiée. */
+/** The trade-off, threshold by threshold. The only output worth publishing. */
 export function balayer(cas: Cas[], seuils = [0.5, 0.6, 0.7, 0.8, 0.9, 0.95], referentiel?: Referentiel, k: Constantes = CONSTANTES): Bilan[] {
   return seuils.map((s) => mesurer(cas, s, referentiel, k));
 }
@@ -75,14 +75,14 @@ if (import.meta.filename === process.argv[1]) {
   const cas = genererCas(400);
   const pc = (x: number) => (x * 100).toFixed(1).padStart(5) + " %";
 
-  console.log(`\n${cas.length} dossiers synthétiques`);
+  console.log(`\n${cas.length} synthetic files`);
 
   for (const [titre, ref] of [
-    ["SANS référentiel sectoriel", undefined],
-    ["AVEC référentiel sectoriel", REFERENTIEL_SECTORIEL],
+    ["WITHOUT the sector reference", undefined],
+    ["WITH the sector reference", REFERENTIEL_SECTORIEL],
   ] as const) {
     console.log(`\n${titre}`);
-    console.log("seuil   automatisé   justesse   manquements   escalades inutiles");
+    console.log("bar     automated    correct    breaches      wasted escalations");
     console.log("─".repeat(68));
     for (const b of balayer(cas, undefined, ref)) {
       console.log(
@@ -92,7 +92,7 @@ if (import.meta.filename === process.argv[1]) {
     }
   }
   console.log(
-    "\nmanquement       = décidé seul alors qu'il fallait escalader (le coût réglementaire)" +
-    "\nescalade inutile = envoyé à un analyste sans raison (le coût opérationnel)\n",
+    "\nbreach            = decided alone when it had to be escalated (the regulatory cost)" +
+    "\nwasted escalation = sent to an analyst for no reason (the operational cost)\n",
   );
 }

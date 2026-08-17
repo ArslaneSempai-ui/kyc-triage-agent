@@ -1,14 +1,14 @@
 /**
  * L'agent de triage.
  *
- * Il applique la procédure, trace ce qu'il a fait, et — c'est tout l'objet du projet —
- * s'arrête quand il n'est pas sûr.
+ * It applies the procedure, records what it did, and — this is the whole point of the
+ * project — stops when it is not sure.
  *
- * Il n'est volontairement PAS une copie de la vérité terrain. Un agent qui réimplémente
- * exactement le barème qui le note obtient 100 % et ne démontre rien. Celui-ci travaille
- * comme une implémentation réelle : il connaît la procédure, pas le jugement de
+ * It is deliberately NOT a copy of the ground truth. An agent that reimplements exactly
+ * the rule that scores it gets 100 % and demonstrates nothing. This one works like a real
+ * implementation: it knows the procedure, not the judgement of
  * l'analyste. Il ignore les volumes typiques par secteur et se rabat sur un seuil
- * générique — approximation banale, et source d'erreurs mesurables.
+ * generic ceiling — an ordinary approximation, and a source of measurable errors.
  */
 
 import { PAYS_A_RISQUE, PAYS_SOUS_SURVEILLANCE, piecesRequises } from "./cas.ts";
@@ -19,8 +19,8 @@ import type { Referentiel } from "./referentiel.ts";
 import type { Cas, Decision } from "./cas.ts";
 
 /** Un texte dans les deux langues. Le moteur ne produit pas d'affichage : il produit
- *  les deux versions, et l'écran choisit. Une phrase fabriquée côté serveur dans une
- *  seule langue est un défaut d'architecture, pas un oubli de traduction. */
+ *  both versions, and the screen picks. A sentence built server-side in a single language
+ *  is an architecture defect, not a missing translation. */
 export type Bilingue = { fr: string; en: string };
 
 export type Regle = {
@@ -35,16 +35,16 @@ export type Regle = {
    * being incomplete is a bank's own control, not a legal requirement.
    */
   regulation: RegulationKey | null;
-  /** La clause appliquée. Sans elle, la décision est indéfendable. */
+  /** The clause applied. Without it the decision is indefensible. */
   clause: Bilingue;
   constat: Bilingue;
   impose: Decision;
   /**
-   * Netteté du déclenchement, de 0 à 1.
+   * How sharp the trigger is, from 0 to 1.
    *
-   * Une règle peut être formellement vraie tout en reposant sur une observation floue.
-   * « Correspondance sanction à 0,58 » déclenche la même règle que « à 0,97 » et ne
-   * mérite pas la même confiance. Confondre les deux est l'erreur qui rend une
+   * A rule can be formally true while resting on a fuzzy observation. "Sanctions match at
+   * 0.58" fires the same rule as "at 0.97" and does not deserve the same confidence.
+   * Conflating the two is the error that makes an
    * automatisation dangereuse.
    */
   nettete: number;
@@ -53,11 +53,11 @@ export type Regle = {
 export type Verdict = {
   cas: string;
   decision: Decision;
-  /** Ce que l'agent aurait décidé seul, avant la règle d'escalade. */
+  /** What the agent would have decided alone, before the escalation rule. */
   decisionBrute: Decision;
   confiance: number;
   escalade: boolean;
-  /** Les nombres, pas la phrase : c'est l'écran qui la formule, dans sa langue. */
+  /** The numbers, not the sentence: the screen phrases it, in its own language. */
   motifEscalade: { confiance: number; seuil: number } | null;
   regles: Regle[];
 };
@@ -111,7 +111,7 @@ function appliquer(c: Cas, referentiel?: Referentiel, k: Constantes = CONSTANTES
       constat: { fr: `Correspondance liste de sanctions à ${s.toFixed(2)}`,
                  en: `Sanctions-list match at ${s.toFixed(2)}` },
       impose: "escalader",
-      // Nette aux extrêmes, floue au milieu : c'est la zone des homonymes.
+      // Sharp at the extremes, fuzzy in the middle: that is where the namesakes live.
       nettete: s >= k.seuilSanctionCertain ? 0.95 : (s - k.seuilSanctionDoute) / Math.max(1e-6, k.seuilSanctionCertain - k.seuilSanctionDoute) * 0.5 + 0.2,
     });
   }
@@ -168,7 +168,7 @@ function appliquer(c: Cas, referentiel?: Referentiel, k: Constantes = CONSTANTES
         code: "R-LISIB", regulation: null, clause: { fr: "Contrôle interne — une pièce illisible est réputée non fournie",
                   en: "Internal control — an unreadable document counts as not provided" },
         constat: { fr: `Pièce illisible : ${attendue}`, en: `Unreadable document: ${attendue}` }, impose: "complement",
-        // L'agent ne voit qu'un indicateur binaire ; le caractère lisible est un jugement.
+        // The agent sees only a binary flag; legibility is a judgement.
         nettete: 0.7,
       });
     }
@@ -217,9 +217,9 @@ function appliquer(c: Cas, referentiel?: Referentiel, k: Constantes = CONSTANTES
   const normeBrute = referentiel?.get(c.activite.secteur);
   const norme = normeBrute === undefined ? undefined : normeBrute * k.prudence;
   if (norme === undefined) {
-    // Sans référentiel, l'agent ne sait pas si ce volume est anormal ou banal pour ce
-    // métier. Il le signale quand même, et le dit avec une netteté faible : c'est la
-    // confiance qui doit porter l'ignorance, pas la décision.
+    // With no reference table the agent cannot tell whether this volume is abnormal or
+    // ordinary for the trade. It flags it anyway, at low sharpness: it is the confidence
+    // that should carry the ignorance, not the decision.
     if (volume > k.volumeEleve) {
       regles.push({
         code: "R-VOL", regulation: "currencyReport",
@@ -278,41 +278,41 @@ function appliquer(c: Cas, referentiel?: Referentiel, k: Constantes = CONSTANTES
 /**
  * La confiance.
  *
- * Deux choses seulement, et elles ne se remplacent pas : la netteté de ce qui a été
- * observé, et le fait qu'aucune règle n'ait laissé de doute derrière elle. Un dossier
- * sans aucune règle déclenchée est le cas le plus délicat — l'agent doit distinguer
- * « rien à signaler » de « je n'ai rien su regarder ».
+ * Two things only, and neither substitutes for the other: how sharp the observation was,
+ * and whether any rule left doubt behind it. A file with no rule triggered at all is the
+ * most delicate case — the agent has to distinguish "nothing to report" from "I did not
+ * know where to look".
  */
 function confiance(regles: Regle[], decision: Decision): number {
   if (regles.length === 0) {
-    // Aucune règle : la décision est « approuver » par absence de motif. Solide, mais
-    // jamais totale — c'est une conclusion tirée d'un silence.
+    // No rule fired: the decision is "approve" for want of grounds. Solid, but never
+    // total — it is a conclusion drawn from a silence.
     return 0.8;
   }
   const decisives = regles.filter((r) => r.impose === decision);
   if (decisives.length === 0) return 0.3;
 
-  // La règle la plus nette porte la décision ; les autres la confortent un peu.
+  // The sharpest rule carries the decision; the others firm it up a little.
   const meilleure = Math.max(...decisives.map((r) => r.nettete));
   const appui = Math.min(0.1, (decisives.length - 1) * 0.04);
 
-  // Une règle floue qui pousse vers une décision PLUS grave que celle retenue est un
-  // désaccord interne : la confiance doit en souffrir.
+  // A fuzzy rule pushing toward a MORE severe decision than the one taken is an internal
+  // disagreement, and the confidence has to suffer for it.
   const contradictions = regles.filter((r) => r.impose !== decision && r.nettete < 0.6).length;
   return Math.max(0, Math.min(1, meilleure + appui - contradictions * 0.12));
 }
 
 /**
- * Décider — ou passer la main.
+ * Decide — or hand over.
  *
- * `seuil` est la frontière humaine : en dessous, l'agent ne tranche pas. C'est le seul
- * réglage qui compte, et il appartient au métier, pas à celui qui écrit le code.
+ * `seuil` is the human boundary: below it the agent does not decide. It is the only
+ * setting that matters, and it belongs to the business, not to whoever writes the code.
  */
 export function trier(c: Cas, seuil = 0.7, referentiel?: Referentiel, k: Constantes = CONSTANTES): Verdict {
   const regles = appliquer(c, referentiel, k);
 
-  // La décision la plus grave l'emporte. Réclamer une pièce à quelqu'un qui ressort
-  // d'une liste de sanctions revient à l'avertir.
+  // The most severe decision wins. Asking someone who came back off a sanctions list for
+  // a missing document amounts to tipping them off.
   const brute: Decision = regles.length === 0
     ? "approuver"
     : regles.reduce((pire, r) => (RANG[r.impose] > RANG[pire] ? r.impose : pire), "approuver" as Decision);
