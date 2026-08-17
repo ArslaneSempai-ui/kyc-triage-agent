@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Triage des entrées en relation</title>
+<style>
+  /*
+   * Un seul écran. Les chiffres en haut, le réglage au milieu, le travail en bas.
+   *
+   * L'accent coloré ne marque que deux choses : l'action en cours, et un motif
+   * d'escalade. Un écran où tout est accentué n'accentue rien.
+   */
+  :root {
+    --bg:#faf9f7; --panel:#fff; --line:#e4e2dd; --line-fort:#d0cdc6;
+    --text:#1a1a18; --muted:#69675f; --faint:#9a978e;
+    --accent:#1d6b52; --accent-soft:#eef4f1;
+    --warn:#8a5410; --warn-soft:#fbf2e4; --danger:#93312e; --danger-soft:#faece9;
+    --serif: ui-serif, Georgia, "Times New Roman", serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#131416; --panel:#1c1d20; --line:#2b2c30; --line-fort:#3a3c41;
+      --text:#e8e7e3; --muted:#9a9891; --faint:#6a6862;
+      --accent:#4fbb94; --accent-soft:#16302a;
+      --warn:#dda15e; --warn-soft:#2f2416; --danger:#d98682; --danger-soft:#2c1a19; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+    font:15px/1.65 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased; }
+  main { max-width:900px; margin:0 auto; padding:44px 30px 120px; }
+
+  h1 { font-family:var(--serif); font-size:25px; font-weight:400; margin:0 0 6px;
+    letter-spacing:-0.01em; }
+  .lede { color:var(--muted); font-size:13.5px; margin:0 0 26px; max-width:620px; }
+
+  h2 { font-size:13px; font-weight:600; letter-spacing:.04em; text-transform:uppercase;
+    color:var(--muted); margin:34px 0 12px; }
+
+  .chiffres { display:grid; grid-template-columns:repeat(auto-fit,minmax(132px,1fr));
+    gap:1px; background:var(--line); border:1px solid var(--line);
+    border-radius:9px; overflow:hidden; }
+  .chiffre { background:var(--panel); padding:15px 17px; }
+  .chiffre b { display:block; font-size:25px; font-weight:500; letter-spacing:-0.03em;
+    line-height:1.2; font-variant-numeric:tabular-nums; }
+  .chiffre span { font-size:11.5px; color:var(--muted); letter-spacing:.02em; }
+  .chiffre.alerte b { color:var(--danger); }
+
+  .reglage { background:var(--panel); border:1px solid var(--line); border-radius:9px;
+    padding:17px 19px; margin-top:14px; }
+  .reglage .titre { font-weight:500; font-size:14px; }
+  .reglage .quoi { color:var(--muted); font-size:13px; margin-top:2px; }
+  .curseur { display:flex; align-items:center; gap:12px; margin-top:12px; }
+  .curseur span { font-size:12px; color:var(--muted); flex:0 0 auto; }
+  input[type=range] { flex:1; accent-color:var(--accent); }
+  .val { font-variant-numeric:tabular-nums; font-weight:500; min-width:34px; text-align:right; }
+
+  .bascule { display:flex; align-items:center; gap:10px; margin-top:16px;
+    padding-top:14px; border-top:1px solid var(--line); }
+  .bascule input { accent-color:var(--accent); width:16px; height:16px; }
+  .bascule label { font-size:13.5px; cursor:pointer; }
+
+  .dossier { background:var(--panel); border:1px solid var(--line); border-radius:9px;
+    padding:17px 19px; margin-bottom:11px; }
+  .entete { display:flex; justify-content:space-between; align-items:baseline; gap:14px;
+    flex-wrap:wrap; }
+  .nom { font-weight:500; }
+  .meta { font-size:12.5px; color:var(--muted); }
+  .motif { background:var(--warn-soft); color:var(--warn); border-radius:7px;
+    padding:9px 12px; font-size:13px; margin-top:11px; }
+
+  .regle { display:flex; gap:10px; padding:8px 0; border-bottom:1px solid var(--line);
+    font-size:13px; }
+  .regle:last-of-type { border-bottom:0; }
+  .code { flex:0 0 74px; font-family:ui-monospace,Menlo,monospace; font-size:11.5px;
+    color:var(--accent); padding-top:2px; }
+  .constat { flex:1; min-width:0; }
+  .clause { color:var(--faint); font-size:11.5px; margin-top:2px; }
+  .nettete { flex:0 0 auto; font-size:11.5px; color:var(--muted);
+    font-variant-numeric:tabular-nums; }
+
+  .actions { display:flex; gap:8px; margin-top:13px; flex-wrap:wrap; align-items:center; }
+  button.b { font:inherit; font-size:13.5px; padding:8px 14px; border:1px solid var(--line-fort);
+    border-radius:7px; background:var(--panel); color:var(--text); cursor:pointer; }
+  button.b:hover:not(:disabled) { border-color:var(--text); }
+  /*
+   * Aucune action n'est mise en avant par défaut.
+   *
+   * Remplir « Approuver » en vert faisait de l'approbation le geste réflexe sur une file
+   * de conformité — exactement l'inverse de ce qu'on veut d'un contrôle. Seule la
+   * décision que l'agent proposait est signalée, et sobrement : elle informe, elle
+   * n'appelle pas le clic.
+   */
+  button.b.propose { border-color:var(--accent); color:var(--accent); font-weight:500; }
+  button.b:disabled { opacity:.4; cursor:default; }
+  input.motif-champ { font:inherit; font-size:13.5px; padding:8px 12px; flex:1; min-width:180px;
+    border:1px solid var(--line-fort); border-radius:7px; background:var(--bg); color:var(--text); }
+  input.motif-champ:focus { outline:none; border-color:var(--accent); }
+
+  .vide { color:var(--muted); font-size:13.5px; background:var(--panel);
+    border:1px dashed var(--line-fort); border-radius:9px; padding:22px; text-align:center; }
+  .fait { display:flex; justify-content:space-between; gap:14px; padding:9px 0;
+    border-bottom:1px solid var(--line); font-size:13px; }
+  .fait:last-child { border-bottom:0; }
+  .desaccord { color:var(--warn); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Triage des entrées en relation</h1>
+  <p class="lede">L'agent applique la procédure sur chaque dossier, cite la clause qui
+    fonde sa décision, et s'arrête quand il n'est pas sûr. Ce qui reste ci-dessous est ce
+    qu'il n'a pas voulu trancher seul.</p>
+
+  <div class="chiffres" id="chiffres"></div>
+  <div id="reglages"></div>
+
+  <h2 id="titreFile">File de revue</h2>
+  <div id="file"></div>
+
+  <h2>Décisions humaines récentes</h2>
+  <div id="traitees"></div>
+</main>
+
+<script type="module">
+const $ = (s) => document.querySelector(s);
+const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+const api = async (chemin, corps) => {
+  const r = await fetch(chemin, corps ? { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify(corps) } : {});
+  return r.json();
+};
+
+const LIBELLE = { approuver:"Approuver", complement:"Demander un complément", escalader:"Escalader à la conformité" };
+const pc = (x) => (x * 100).toFixed(1) + " %";
+
+let etat = null;
+let occupe = false;
+
+function chiffres(c) {
+  const cases = [
+    { v: pc(c.tauxAutomatisation), l: "traité sans humain" },
+    { v: c.enFile, l: "dans la file" },
+    { v: c.escaladesInutiles, l: "escalades évitables" },
+    { v: c.manquements, l: "manquements", alerte: c.manquements > 0 },
+    { v: pc(c.precisionAutomatisee), l: "justesse en automatique" },
+  ];
+  if (c.tauxAccord !== null) cases.push({ v: pc(c.tauxAccord), l: "l'humain confirme l'agent" });
+
+  $("#chiffres").innerHTML = cases.map((x) =>
+    `<div class="chiffre${x.alerte ? " alerte" : ""}"><b>${esc(x.v)}</b><span>${esc(x.l)}</span></div>`).join("");
+}
+
+function reglages(c) {
+  $("#reglages").innerHTML = `
+    <div class="reglage">
+      <div class="titre">Jusqu'où l'agent décide seul</div>
+      <div class="quoi">En dessous de cette confiance, il passe la main plutôt que de trancher.
+        Ce réglage appartient au métier, pas à qui écrit le code.</div>
+      <div class="curseur">
+        <span>laisse passer, quitte à se tromper</span>
+        <input type="range" id="seuil" min="0.3" max="0.99" step="0.01" value="${c.seuil}" />
+        <span>ne décide que s'il est sûr</span>
+        <span class="val" id="seuilVal">${c.seuil.toFixed(2)}</span>
+      </div>
+      <div class="bascule">
+        <input type="checkbox" id="ref" ${c.referentielActif ? "checked" : ""} />
+        <label for="ref">Donner à l'agent les volumes habituels par secteur —
+          sans eux, il envoie chez un analyste des dossiers parfaitement ordinaires</label>
+      </div>
+    </div>`;
+
+  const seuil = $("#seuil");
+  seuil.oninput = () => { $("#seuilVal").textContent = Number(seuil.value).toFixed(2); };
+  seuil.onchange = async () => { await envoyer("/api/seuil", { seuil: Number(seuil.value) }); };
+  $("#ref").onchange = async (e) => { await envoyer("/api/referentiel", { actif: e.target.checked }); };
+}
+
+function blocRegles(regles) {
+  if (regles.length === 0) {
+    return `<div class="regle"><div class="constat" style="color:var(--muted)">Aucune règle
+      déclenchée — la décision reposerait sur une absence de motif.</div></div>`;
+  }
+  return regles.map((r) => `
+    <div class="regle">
+      <div class="code">${esc(r.code)}</div>
+      <div class="constat">${esc(r.constat)}<div class="clause">${esc(r.clause)}</div></div>
+      <div class="nettete">netteté ${r.nettete.toFixed(2)}</div>
+    </div>`).join("");
+}
+
+function dossier(l) {
+  const c = l.cas, v = l.verdict;
+  const pays = c.activite.paysOperation.join(", ");
+  return `
+    <div class="dossier" data-cas="${esc(c.id)}">
+      <div class="entete">
+        <div>
+          <span class="nom">${esc(c.nom)}</span>
+          <span class="meta"> · ${esc(c.type)} · ${esc(c.paysResidence)}</span>
+        </div>
+        <div class="meta">${esc(c.id)} · confiance ${v.confiance.toFixed(2)}</div>
+      </div>
+      <div class="meta">${esc(c.activite.secteur)} · ${c.activite.volumeAnnuelDeclare.toLocaleString("fr-FR")} € déclarés · opère vers ${esc(pays)}</div>
+
+      ${v.motifEscalade ? `<div class="motif">${esc(v.motifEscalade)}</div>` : ""}
+      ${!v.escalade ? `<div class="motif">Escaladé par la règle elle-même — l'agent est sûr que ce dossier relève d'un analyste.</div>` : ""}
+
+      <div style="margin-top:12px">${blocRegles(v.regles)}</div>
+
+      <div class="actions">
+        <input class="motif-champ" placeholder="Motif de ta décision (facultatif)" />
+        ${["approuver", "complement", "escalader"].map((d) => `
+          <button class="b${d === v.decisionBrute ? " propose" : ""}" data-d="${d}"
+            ${d === v.decisionBrute ? 'title="Ce que l\'agent proposait"' : ""}>${LIBELLE[d]}${d === v.decisionBrute ? " ·" : ""}</button>`).join("")}
+      </div>
+    </div>`;
+}
+
+function dessiner() {
+  const { chiffres: c, file, traitees } = etat;
+  chiffres(c);
+  reglages(c);
+
+  const montres = file.length;
+  $("#titreFile").textContent = montres < c.enFile
+    ? `File de revue — ${montres} affichés sur ${c.enFile}`
+    : `File de revue — ${c.enFile} dossier${c.enFile > 1 ? "s" : ""}`;
+  $("#file").innerHTML = file.length === 0
+    ? `<div class="vide">Rien à revoir. À ce réglage, l'agent tranche tout seul.</div>`
+    : file.map(dossier).join("") +
+      `<div class="meta" style="margin-top:10px">Le point « · » marque la décision que
+       l'agent proposait. Aucune action n'est préselectionnée : c'est toi qui tranches.</div>`;
+
+  $("#traitees").innerHTML = traitees.length === 0
+    ? `<div class="vide">Aucune décision humaine pour l'instant.</div>`
+    : traitees.map((l) => {
+        const r = l.reprise;
+        const accord = r.retenue === r.propose;
+        return `<div class="fait">
+          <div>${esc(l.cas.nom)} <span class="meta">· ${esc(r.cas)}</span>
+            ${r.motif ? `<div class="meta">« ${esc(r.motif)} »</div>` : ""}</div>
+          <div class="${accord ? "meta" : "desaccord"}" style="text-align:right;flex:0 0 auto">
+            ${esc(LIBELLE[r.retenue])}
+            ${accord ? "" : `<div class="meta">l'agent proposait : ${esc(LIBELLE[r.propose])}</div>`}
+          </div>
+        </div>`;
+      }).join("");
+
+  brancher();
+}
+
+function brancher() {
+  for (const bloc of document.querySelectorAll(".dossier")) {
+    const id = bloc.dataset.cas;
+    const champ = bloc.querySelector(".motif-champ");
+    for (const bouton of bloc.querySelectorAll("button[data-d]")) {
+      bouton.onclick = async () => {
+        if (occupe) return;
+        await envoyer("/api/reprendre", { cas: id, decision: bouton.dataset.d, motif: champ.value });
+      };
+    }
+  }
+}
+
+async function envoyer(chemin, corps) {
+  occupe = true;
+  for (const b of document.querySelectorAll("button.b")) b.disabled = true;
+  const r = await api(chemin, corps);
+  occupe = false;
+  if (r.erreur) { alert(r.erreur); return; }
+  etat = r;
+  dessiner();
+}
+
+etat = await api("/api/etat");
+dessiner();
+</script>
+</body>
+</html>

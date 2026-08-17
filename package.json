@@ -1,0 +1,14 @@
+{
+  "name": "kyc-triage",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "An onboarding triage agent that decides where it is confident and escalates where it is not.",
+  "scripts": {
+    "start": "node src/serveur.ts",
+    "mesurer": "node src/mesurer.ts",
+    "cas": "node src/generer.ts",
+    "test": "node --test src/*.test.ts"
+  },
+  "engines": { "node": ">=24" }
+}
