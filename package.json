@@ -9,7 +9,9 @@
     "mesurer": "node src/mesurer.ts",
     "cas": "node src/generer.ts",
     "test": "tsc --noEmit && node --test src/*.test.ts",
-    "typage": "tsc --noEmit"
+    "typage": "tsc --noEmit",
+    "echecs": "node src/echecs.ts",
+    "sensibilite": "node src/sensibilite.ts"
   },
   "engines": {
     "node": ">=24"

@@ -12,7 +12,7 @@
  */
 
 import { PAYS_A_RISQUE, PAYS_SOUS_SURVEILLANCE, piecesRequises } from "./cas.ts";
-import { MULTIPLE_ANORMAL, netteteVolume } from "./referentiel.ts";
+import { MULTIPLE_ANORMAL, netteteVolume, PRUDENCE } from "./referentiel.ts";
 import type { Referentiel } from "./referentiel.ts";
 import type { Cas, Decision } from "./cas.ts";
 
@@ -170,7 +170,10 @@ function appliquer(c: Cas, referentiel?: Referentiel): Regle[] {
   }
 
   const volume = c.activite.volumeAnnuelDeclare;
-  const norme = referentiel?.get(c.activite.secteur);
+  // Every comparison against the reference takes the margin: the table is known to be
+  // wrong in both directions, and only one of them is cheap.
+  const normeBrute = referentiel?.get(c.activite.secteur);
+  const norme = normeBrute === undefined ? undefined : normeBrute * PRUDENCE;
   if (norme === undefined) {
     // Sans référentiel, l'agent ne sait pas si ce volume est anormal ou banal pour ce
     // métier. Il le signale quand même, et le dit avec une netteté faible : c'est la
@@ -199,8 +202,26 @@ function appliquer(c: Cas, referentiel?: Referentiel): Regle[] {
     }
   }
 
+  /*
+   * The jurisdiction rule reasons in multiples of the sector, not in absolute euros.
+   *
+   * It used a flat €750,000 floor, and the failure gallery showed what that cost. The
+   * single breach in four hundred files — C-0250, a restaurant declaring €694,330 with
+   * operations into a monitored jurisdiction — sat just under that floor, so no rule
+   * fired at all and the agent approved on an absence of grounds. The same flat floor
+   * also made this rule the largest single source of wasted escalations.
+   *
+   * One rule, both kinds of damage — and it is the defect already fixed once for the
+   * volume rule and never carried across. A threshold in absolute currency is wrong in
+   * both directions the moment sectors differ.
+   */
   const surveilles = c.activite.paysOperation.filter((x) => PAYS_SOUS_SURVEILLANCE.has(x));
-  if (surveilles.length > 0 && c.activite.volumeAnnuelDeclare > VOLUME_ELEVE / 2) {
+  const normeSecteur = normeBrute === undefined ? undefined : normeBrute * PRUDENCE;
+  const volumeSignificatif = normeSecteur !== undefined
+    ? c.activite.volumeAnnuelDeclare > normeSecteur * 2
+    : c.activite.volumeAnnuelDeclare > VOLUME_ELEVE / 2;
+
+  if (surveilles.length > 0 && volumeSignificatif) {
     regles.push({
       code: "R-JURID", clause: { fr: "PR-415 §9 — juridiction sous surveillance combinée à un volume significatif",
                 en: "PR-415 §9 — monitored jurisdiction combined with a significant volume" },
