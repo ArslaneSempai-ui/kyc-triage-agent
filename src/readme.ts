@@ -10,6 +10,7 @@ import { genererCas } from "./cas.ts";
 import { balayer, mesurer } from "./mesurer.ts";
 import { REFERENTIEL_SECTORIEL, PRUDENCE } from "./referentiel.ts";
 import { collecter, forme, decrire } from "./echecs.ts";
+import { trier } from "./agent.ts";
 import { balayerErreur, bandes, PLAUSIBLE, AVEU, GRAINES, tirages } from "./sensibilite.ts";
 import { rate } from "./interval.ts";
 import { REGULATIONS, ALL } from "./regulations.ts";
@@ -137,12 +138,23 @@ const baselines = table(
  *
  * This table is the defensibility argument made concrete. Every figure in it was
  * retrieved from the source on the date shown — nothing is cited from memory.
+ *
+ * It lists what *this* tool applies, not everything the shared file contains. The two
+ * were the same until a sanctions-reporting section was added for the regression bench,
+ * and this table silently grew a citation no rule here has ever applied — a table headed
+ * "what every decision cites" listing something no decision cites. Deriving the list from
+ * the rules means it cannot drift again.
  */
+const cited = new Set(
+  genererCas(400).flatMap((c) => trier(c, 0.7, REFERENTIEL_SECTORIEL).regles)
+    .map((r) => r.regulation).filter((k): k is NonNullable<typeof k> => k !== null),
+);
 const citations = table(
   ["Citation", "Requires", "Figure", "Retrieved"],
-  ALL.map((r) => [
-    `[${r.cite}](${r.source})`, r.says, r.figure ?? "—", r.retrieved,
-  ]),
+  ALL.filter((r) => [...cited].some((k) => REGULATIONS[k].cite === r.cite))
+    .map((r) => [
+      `[${r.cite}](${r.source})`, r.says, r.figure ?? "—", r.retrieved,
+    ]),
 );
 
 emit(new URL("../README.md", import.meta.url).pathname,

@@ -124,9 +124,6 @@ citation is not.
 | Citation | Requires | Figure | Retrieved |
 |---|---|---|---|
 | [31 CFR 1020.320(a)(2)](https://www.law.cornell.edu/cfr/text/31/1020.320) | A bank must report a suspicious transaction conducted or attempted by, at or through it once the amount involved or aggregated reaches the threshold. | $5,000 | 2026-08-17 |
-| [31 CFR 1020.320(b)(3)](https://www.law.cornell.edu/cfr/text/31/1020.320) | The report is due within thirty calendar days of initial detection. Where no suspect has been identified the bank may take a further thirty days, and never more than sixty in total. | 30 days, 60 maximum | 2026-08-17 |
-| [31 CFR 1020.320(d)](https://www.law.cornell.edu/cfr/text/31/1020.320) | The bank keeps a copy of the report and its supporting documentation for five years from the filing date. | 5 years | 2026-08-17 |
-| [31 CFR 1020.320(e)](https://www.law.cornell.edu/cfr/text/31/1020.320) | Nobody at the bank may disclose a report, or any information that would reveal one exists. | — | 2026-08-17 |
 | [31 CFR 1010.230(d)(1)](https://www.law.cornell.edu/cfr/text/31/1010.230) | Each individual holding a quarter or more of the equity of a legal entity customer must be identified. | 25 % | 2026-08-17 |
 | [31 CFR 1010.230(d)(2)](https://www.law.cornell.edu/cfr/text/31/1010.230) | One individual with significant responsibility to control or direct the entity must be identified, in addition to any owners. | 1 individual | 2026-08-17 |
 | [31 CFR 1010.230(a)](https://www.law.cornell.edu/cfr/text/31/1010.230) | Beneficial owners are identified when the account is opened, not afterwards. | — | 2026-08-17 |
