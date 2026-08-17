@@ -13,6 +13,8 @@
 
 import { PAYS_A_RISQUE, PAYS_SOUS_SURVEILLANCE, piecesRequises } from "./cas.ts";
 import { MULTIPLE_ANORMAL, netteteVolume, PRUDENCE } from "./referentiel.ts";
+import { REGULATIONS } from "./regulations.ts";
+import type { RegulationKey } from "./regulations.ts";
 import type { Referentiel } from "./referentiel.ts";
 import type { Cas, Decision } from "./cas.ts";
 
@@ -23,7 +25,17 @@ export type Bilingue = { fr: string; en: string };
 
 export type Regle = {
   code: string;
-  /** La clause de procédure appliquée. Sans elle, la décision est indéfendable. */
+  /**
+   * The regulation this rule enforces, or `null` where it enforces an internal control
+   * rather than a rule of law.
+   *
+   * The clauses used to be invented — `PR-101 §5` was a label chosen so that decisions
+   * would cite *something*. A reader could not check one of them. They are real citations
+   * now, and `null` is an honest answer where no regulation is being applied: a file
+   * being incomplete is a bank's own control, not a legal requirement.
+   */
+  regulation: RegulationKey | null;
+  /** La clause appliquée. Sans elle, la décision est indéfendable. */
   clause: Bilingue;
   constat: Bilingue;
   impose: Decision;
@@ -63,9 +75,9 @@ function appliquer(c: Cas, referentiel?: Referentiel): Regle[] {
   const s = c.criblage.correspondanceSanction;
   if (s >= SEUIL_SANCTION_DOUTE) {
     regles.push({
-      code: "R-SANCT",
-      clause: { fr: "PR-415 §2 — toute correspondance avec une liste de sanctions est revue avant entrée en relation",
-                en: "PR-415 §2 — every sanctions-list match is reviewed before onboarding" },
+      code: "R-SANCT", regulation: "sarThreshold",
+      clause: { fr: "31 CFR 1020.320(a)(2) — une opération suspecte de 5 000 $ ou plus est déclarée",
+                en: "31 CFR 1020.320(a)(2) — a suspicious transaction of $5,000 or more must be reported" },
       constat: { fr: `Correspondance liste de sanctions à ${s.toFixed(2)}`,
                  en: `Sanctions-list match at ${s.toFixed(2)}` },
       impose: "escalader",
@@ -77,9 +89,9 @@ function appliquer(c: Cas, referentiel?: Referentiel): Regle[] {
   const p = c.criblage.correspondancePep;
   if (p >= SEUIL_SANCTION_CERTAIN) {
     regles.push({
-      code: "R-PEP",
-      clause: { fr: "PR-415 §5 — une personne politiquement exposée relève de la vigilance renforcée",
-                en: "PR-415 §5 — a politically exposed person requires enhanced due diligence" },
+      code: "R-PEP", regulation: "identificationTiming",
+      clause: { fr: "31 CFR 1010.230(a) — l'identification se fait à l'ouverture du compte",
+                en: "31 CFR 1010.230(a) — identification is performed at account opening" },
       constat: { fr: `Correspondance PPE à ${p.toFixed(2)}`, en: `PEP match at ${p.toFixed(2)}` },
       impose: "escalader",
       nettete: 0.9,
@@ -88,9 +100,9 @@ function appliquer(c: Cas, referentiel?: Referentiel): Regle[] {
 
   if (PAYS_A_RISQUE.has(c.paysResidence)) {
     regles.push({
-      code: "R-PAYS",
-      clause: { fr: "PR-101 §7 — résidence dans une juridiction à haut risque",
-                en: "PR-101 §7 — residence in a high-risk jurisdiction" },
+      code: "R-PAYS", regulation: null,
+      clause: { fr: "Contrôle interne — résidence dans une juridiction à haut risque",
+                en: "Internal control — residence in a high-risk jurisdiction" },
       constat: { fr: `Pays de résidence : ${c.paysResidence}`, en: `Country of residence: ${c.paysResidence}` },
       impose: "escalader",
       nettete: 1,
@@ -100,9 +112,9 @@ function appliquer(c: Cas, referentiel?: Referentiel): Regle[] {
   const risque = c.activite.paysOperation.filter((x) => PAYS_A_RISQUE.has(x));
   if (risque.length > 0) {
     regles.push({
-      code: "R-FLUX",
-      clause: { fr: "PR-101 §7 — flux déclarés vers une juridiction à haut risque",
-                en: "PR-101 §7 — declared flows to a high-risk jurisdiction" },
+      code: "R-FLUX", regulation: null,
+      clause: { fr: "Contrôle interne — flux déclarés vers une juridiction à haut risque",
+                en: "Internal control — declared flows to a high-risk jurisdiction" },
       constat: { fr: `Pays d'opération : ${risque.join(", ")}`, en: `Countries of operation: ${risque.join(", ")}` },
       impose: "escalader",
       nettete: 1,
@@ -113,9 +125,9 @@ function appliquer(c: Cas, referentiel?: Referentiel): Regle[] {
     const piece = c.pieces.find((x) => x.type === attendue);
     if (!piece || !piece.fournie) {
       regles.push({
-        code: "R-PIECE",
-        clause: { fr: "PR-101 §2 — le dossier est complet avant toute décision",
-                  en: "PR-101 §2 — the file is complete before any decision" },
+        code: "R-PIECE", regulation: null,
+        clause: { fr: "Contrôle interne — le dossier est complet avant toute décision",
+                  en: "Internal control — the file is complete before any decision" },
         constat: { fr: `Pièce absente : ${attendue}`, en: `Missing document: ${attendue}` },
         impose: "complement", nettete: 1,
       });
@@ -123,8 +135,8 @@ function appliquer(c: Cas, referentiel?: Referentiel): Regle[] {
     }
     if (!piece.lisible) {
       regles.push({
-        code: "R-LISIB", clause: { fr: "PR-101 §2 — une pièce illisible est réputée non fournie",
-                  en: "PR-101 §2 — an unreadable document counts as not provided" },
+        code: "R-LISIB", regulation: null, clause: { fr: "Contrôle interne — une pièce illisible est réputée non fournie",
+                  en: "Internal control — an unreadable document counts as not provided" },
         constat: { fr: `Pièce illisible : ${attendue}`, en: `Unreadable document: ${attendue}` }, impose: "complement",
         // L'agent ne voit qu'un indicateur binaire ; le caractère lisible est un jugement.
         nettete: 0.7,
@@ -132,8 +144,8 @@ function appliquer(c: Cas, referentiel?: Referentiel): Regle[] {
     }
     if (piece.expireDans !== null && piece.expireDans <= 0) {
       regles.push({
-        code: "R-EXPIR", clause: { fr: "PR-101 §2 — une pièce d'identité expirée n'est pas recevable",
-                  en: "PR-101 §2 — an expired identity document is not acceptable" },
+        code: "R-EXPIR", regulation: null, clause: { fr: "Contrôle interne — une pièce d'identité expirée n'est pas recevable",
+                  en: "Internal control — an expired identity document is not acceptable" },
         constat: { fr: `${attendue} expirée depuis ${Math.abs(piece.expireDans)} mois`,
                    en: `${attendue} expired ${Math.abs(piece.expireDans)} months ago` },
         impose: "complement", nettete: 1,
@@ -141,8 +153,8 @@ function appliquer(c: Cas, referentiel?: Referentiel): Regle[] {
     }
     if (!piece.nomConcorde) {
       regles.push({
-        code: "R-NOM", clause: { fr: "PR-101 §3 — le nom porté par la pièce correspond au nom déclaré",
-                  en: "PR-101 §3 — the name on the document matches the declared name" },
+        code: "R-NOM", regulation: null, clause: { fr: "Contrôle interne — le nom porté par la pièce correspond au nom déclaré",
+                  en: "Internal control — the name on the document matches the declared name" },
         constat: { fr: `Nom discordant sur : ${attendue}`, en: `Name mismatch on: ${attendue}` }, impose: "complement", nettete: 0.85,
       });
     }
@@ -153,16 +165,16 @@ function appliquer(c: Cas, referentiel?: Referentiel): Regle[] {
     const gros = c.beneficiaires.filter((b) => b.part >= 25 && !b.identifie);
     if (gros.length > 0) {
       regles.push({
-        code: "R-BE25", clause: { fr: "PR-101 §5 — tout bénéficiaire détenant plus de 25 % est identifié",
-                  en: "PR-101 §5 — every beneficial owner above 25 % is identified" },
+        code: "R-BE25", regulation: "beneficialOwnership", clause: { fr: "31 CFR 1010.230(d)(1) — tout détenteur de 25 % ou plus du capital est identifié",
+                  en: "31 CFR 1010.230(d)(1) — every holder of 25 % or more of the equity is identified" },
         constat: { fr: `${gros.length} bénéficiaire(s) au-dessus de 25 % non identifié(s)`,
                    en: `${gros.length} beneficial owner(s) above 25 % not identified` },
         impose: "complement", nettete: 1,
       });
     } else if (couvert < 75) {
       regles.push({
-        code: "R-BECOUV", clause: { fr: "PR-101 §5 — la chaîne de détention est reconstituée",
-                  en: "PR-101 §5 — the ownership chain is reconstructed" },
+        code: "R-BECOUV", regulation: "controlPerson", clause: { fr: "31 CFR 1010.230(d)(2) — une personne exerçant le contrôle est identifiée en plus des détenteurs",
+                  en: "31 CFR 1010.230(d)(2) — one individual exercising control is identified besides the owners" },
         constat: { fr: `Détention identifiée : ${couvert} %`, en: `Ownership identified: ${couvert} %` },
         impose: "complement", nettete: 0.8,
       });
@@ -180,9 +192,9 @@ function appliquer(c: Cas, referentiel?: Referentiel): Regle[] {
     // confiance qui doit porter l'ignorance, pas la décision.
     if (volume > VOLUME_ELEVE) {
       regles.push({
-        code: "R-VOL",
-        clause: { fr: "PR-204 §1 — un volume déclaré sans rapport avec l'activité justifie un examen",
-                  en: "PR-204 §1 — a declared volume unrelated to the activity warrants review" },
+        code: "R-VOL", regulation: "currencyReport",
+        clause: { fr: "31 CFR 1010.311 — les opérations en espèces au-delà de 10 000 $ sont déclarées",
+                  en: "31 CFR 1010.311 — currency transactions above $10,000 are reported" },
         constat: { fr: `Volume annuel déclaré : ${volume.toLocaleString("fr-FR")} €`,
                    en: `Declared annual volume: €${volume.toLocaleString("en-GB")}` },
         impose: "escalader", nettete: 0.35,
@@ -192,9 +204,9 @@ function appliquer(c: Cas, referentiel?: Referentiel): Regle[] {
     const rapport = volume / norme;
     if (rapport >= MULTIPLE_ANORMAL) {
       regles.push({
-        code: "R-VOL",
-        clause: { fr: "PR-204 §1 — un volume déclaré sans rapport avec l'activité justifie un examen",
-                  en: "PR-204 §1 — a declared volume unrelated to the activity warrants review" },
+        code: "R-VOL", regulation: "currencyReport",
+        clause: { fr: "31 CFR 1010.311 — les opérations en espèces au-delà de 10 000 $ sont déclarées",
+                  en: "31 CFR 1010.311 — currency transactions above $10,000 are reported" },
         constat: { fr: `${volume.toLocaleString("fr-FR")} € déclarés, soit ${rapport.toFixed(1)}× l'usage du secteur « ${c.activite.secteur} »`,
                    en: `€${volume.toLocaleString("en-GB")} declared, ${rapport.toFixed(1)}× the norm for “${c.activite.secteur}”` },
         impose: "escalader", nettete: netteteVolume(rapport),
@@ -223,8 +235,8 @@ function appliquer(c: Cas, referentiel?: Referentiel): Regle[] {
 
   if (surveilles.length > 0 && volumeSignificatif) {
     regles.push({
-      code: "R-JURID", clause: { fr: "PR-415 §9 — juridiction sous surveillance combinée à un volume significatif",
-                en: "PR-415 §9 — monitored jurisdiction combined with a significant volume" },
+      code: "R-JURID", regulation: null, clause: { fr: "Contrôle interne — juridiction sous surveillance combinée à un volume significatif",
+                en: "Internal control — monitored jurisdiction combined with a significant volume" },
       constat: { fr: `Opérations vers ${surveilles.join(", ")}`, en: `Operations into ${surveilles.join(", ")}` },
       impose: "escalader", nettete: 0.5,
     });

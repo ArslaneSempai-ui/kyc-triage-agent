@@ -109,6 +109,39 @@ the whole argument for making confidence a first-class output instead of a hidde
 
 ---
 
+## What every decision cites
+
+An earlier version of this agent cited clauses I had invented — `PR-101 §5` was a label
+chosen so that decisions would reference *something*, and a reader could check none of
+them. For a tool whose entire argument is that an automated decision must be defensible,
+that was the one thing it could not do.
+
+Each rule now names a section of 31 CFR that was actually retrieved, or says plainly that
+it enforces a bank's own control rather than a rule of law. Both are honest. A made-up
+citation is not.
+
+<!-- figures:citations -->
+| Citation | Requires | Figure | Retrieved |
+|---|---|---|---|
+| [31 CFR 1020.320(a)(2)](https://www.law.cornell.edu/cfr/text/31/1020.320) | A bank must report a suspicious transaction conducted or attempted by, at or through it once the amount involved or aggregated reaches the threshold. | $5,000 | 2026-08-17 |
+| [31 CFR 1020.320(b)(3)](https://www.law.cornell.edu/cfr/text/31/1020.320) | The report is due within thirty calendar days of initial detection. Where no suspect has been identified the bank may take a further thirty days, and never more than sixty in total. | 30 days, 60 maximum | 2026-08-17 |
+| [31 CFR 1020.320(d)](https://www.law.cornell.edu/cfr/text/31/1020.320) | The bank keeps a copy of the report and its supporting documentation for five years from the filing date. | 5 years | 2026-08-17 |
+| [31 CFR 1020.320(e)](https://www.law.cornell.edu/cfr/text/31/1020.320) | Nobody at the bank may disclose a report, or any information that would reveal one exists. | — | 2026-08-17 |
+| [31 CFR 1010.230(d)(1)](https://www.law.cornell.edu/cfr/text/31/1010.230) | Each individual holding a quarter or more of the equity of a legal entity customer must be identified. | 25 % | 2026-08-17 |
+| [31 CFR 1010.230(d)(2)](https://www.law.cornell.edu/cfr/text/31/1010.230) | One individual with significant responsibility to control or direct the entity must be identified, in addition to any owners. | 1 individual | 2026-08-17 |
+| [31 CFR 1010.230(a)](https://www.law.cornell.edu/cfr/text/31/1010.230) | Beneficial owners are identified when the account is opened, not afterwards. | — | 2026-08-17 |
+| [31 CFR 1010.311](https://www.law.cornell.edu/cfr/text/31/1010.311) | A currency transaction above the threshold is reported by the financial institution. | $10,000 | 2026-08-17 |
+<!-- /figures:citations -->
+
+Nothing here is cited from memory. Every figure was fetched from the source on the date
+shown, and a test fails if a rule claims a regulation whose citation its clause does not
+carry.
+
+The synthetic files remain synthetic — a real onboarding file cannot leave a bank. What is
+no longer invented is the law they are judged against.
+
+---
+
 ## Against doing no work at all
 
 "Handles 63 % without a human" — against what? Two constants bracket the problem, and

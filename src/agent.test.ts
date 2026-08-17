@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { genererCas } from "./cas.ts";
 import { trier } from "./agent.ts";
+import { REGULATIONS } from "./regulations.ts";
 import { REFERENTIEL_SECTORIEL, netteteVolume, MULTIPLE_ANORMAL } from "./referentiel.ts";
 import { mesurer } from "./mesurer.ts";
 import type { Cas } from "./cas.ts";
@@ -116,4 +117,43 @@ test("le référentiel augmente l'automatisation sans dégrader la sécurité", 
 test("le tirage des dossiers est reproductible", () => {
   assert.deepEqual(genererCas(20), genererCas(20));
   assert.notDeepEqual(genererCas(20), genererCas(20, 999));
+});
+
+/* ── the citations, which are the whole defensibility argument ── */
+
+test("every rule cites a real regulation or declares itself an internal control", () => {
+  /*
+   * The clauses used to be invented. `PR-101 §5` was a label chosen so decisions would
+   * cite something, and a reader could check none of them.
+   *
+   * A rule now either names a section of 31 CFR that was actually retrieved, or says
+   * plainly that it enforces a bank's own control rather than a rule of law. Both are
+   * honest; a made-up citation is not.
+   */
+  const c = base();
+  c.criblage.correspondanceSanction = 0.9;
+  c.pieces[0].fournie = false;
+  c.activite.volumeAnnuelDeclare = 9_000_000;
+
+  const invented = /\bPR-\d+ §\d+/;
+  for (const langue of ["fr", "en"] as const) {
+    for (const r of trier(c, 0.7, REFERENTIEL_SECTORIEL).regles) {
+      assert.ok(!invented.test(r.clause[langue]), `${r.code} still cites an invented clause: ${r.clause[langue]}`);
+      if (r.regulation !== null) {
+        assert.ok(REGULATIONS[r.regulation], `${r.code} names a regulation that does not exist`);
+        assert.ok(r.clause[langue].includes(REGULATIONS[r.regulation].cite),
+          `${r.code} claims ${r.regulation} but its clause does not carry the citation`);
+      }
+    }
+  }
+});
+
+test("every cited regulation carries its source and the date it was retrieved", () => {
+  // A regulation cited without a date is a regulation cited from memory.
+  for (const [key, r] of Object.entries(REGULATIONS)) {
+    assert.match(r.cite, /^31 CFR \d+\.\d+/, `${key} has no usable citation`);
+    assert.match(r.source, /^https:\/\//, `${key} has no source a reader can open`);
+    assert.match(r.retrieved, /^\d{4}-\d{2}-\d{2}$/, `${key} has no retrieval date`);
+    assert.ok(r.says.length > 30, `${key} does not say what it requires`);
+  }
 });

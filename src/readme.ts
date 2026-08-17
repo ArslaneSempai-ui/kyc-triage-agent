@@ -12,6 +12,7 @@ import { REFERENTIEL_SECTORIEL, PRUDENCE } from "./referentiel.ts";
 import { collecter, forme, decrire } from "./echecs.ts";
 import { balayerErreur } from "./sensibilite.ts";
 import { rate } from "./interval.ts";
+import { REGULATIONS, ALL } from "./regulations.ts";
 import { comparer as comparerBases } from "./bases.ts";
 import { run as emit, table } from "./figures.ts";
 
@@ -76,5 +77,18 @@ const baselines = table(
   ]),
 );
 
+/*
+ * What each decision cites, and where a reader can check it.
+ *
+ * This table is the defensibility argument made concrete. Every figure in it was
+ * retrieved from the source on the date shown — nothing is cited from memory.
+ */
+const citations = table(
+  ["Citation", "Requires", "Figure", "Retrieved"],
+  ALL.map((r) => [
+    `[${r.cite}](${r.source})`, r.says, r.figure ?? "—", r.retrieved,
+  ]),
+);
+
 emit(new URL("../README.md", import.meta.url).pathname,
-  { tradeoff, context, sensitivity, failures, margin, baselines });
+  { tradeoff, context, sensitivity, failures, margin, baselines, citations });
