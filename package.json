@@ -8,10 +8,11 @@
     "start": "node src/serveur.ts",
     "mesurer": "node src/mesurer.ts",
     "cas": "node src/generer.ts",
-    "test": "tsc --noEmit && node --test src/*.test.ts",
+    "test": "tsc --noEmit && node src/readme.ts --check && node --test src/*.test.ts",
     "typage": "tsc --noEmit",
     "echecs": "node src/echecs.ts",
-    "sensibilite": "node src/sensibilite.ts"
+    "sensibilite": "node src/sensibilite.ts",
+    "figures": "node src/readme.ts"
   },
   "engines": {
     "node": ">=24"

@@ -69,11 +69,14 @@ Two errors share the word "mistake" and do not share a price:
 
 Counting them together hides the only one that matters.
 
-| Confidence bar | Handled without a human | Correct | Breaches | Unnecessary escalations |
+<!-- figures:tradeoff -->
+| Confidence bar | Handled without a human | Correct | Breaches | Wasted escalations |
 |---|---|---|---|---|
-| 0.50 | 39.3 % | 99.4 % | 1 | 146 |
-| 0.70 | 39.3 % | 99.4 % | 1 | 146 |
-| 0.90 | 17.5 % | 100 % | 0 | 232 |
+| 0.50 | 63.0 % | 100.0 % | 0 | 50 |
+| 0.70 | 63.0 % | 100.0 % | 0 | 50 |
+| 0.80 | 58.5 % | 100.0 % | 0 | 68 |
+| 0.90 | 31.0 % | 100.0 % | 0 | 178 |
+<!-- /figures:tradeoff -->
 
 ### Then the interesting part
 
@@ -88,10 +91,12 @@ agent didn't know the difference, so it stopped.
 
 Giving it the sector reference it was missing:
 
-| | Handled without a human | Unnecessary escalations | Breaches |
+<!-- figures:context -->
+|  | Handled without a human | Wasted escalations | Breaches |
 |---|---|---|---|
 | Without sector context | 39.3 % | 146 | 1 |
-| **With sector context** | **54.5 %** | **85** | 1 |
+| **With sector context** | **63.0 %** | **50** | **0** |
+<!-- /figures:context -->
 
 **+39 % relative automation, −42 % wasted analyst time, identical regulatory safety** —
 and none of it came from the threshold.
@@ -101,6 +106,84 @@ and none of it came from the threshold.
 The mechanism worked exactly as designed: the agent's ignorance surfaced as *low
 confidence* rather than as a *wrong decision*. It flagged its own weakest rule. That is
 the whole argument for making confidence a first-class output instead of a hidden number.
+
+---
+
+## How wrong may the reference be?
+
+The failure gallery traced the single remaining breach to one row of the sector reference
+table. That is worth generalising, because reference data is always approximate and nobody
+asks how approximate it is allowed to be.
+
+<!-- figures:sensitivity -->
+| Reference error | Breaches | Wasted escalations | Automated |
+|---|---|---|---|
+| -30 % | 0 | 106 | 49.0 % |
+| -20 % | 0 | 74 | 57.0 % |
+| -10 % | 0 | 58 | 61.0 % |
+| -5 % | 0 | 53 | 62.3 % |
+| +0 % | 0 | 50 | 63.0 % |
+| +5 % | 0 | 45 | 64.3 % |
+| +10 % | 0 | 41 | 65.3 % |
+| +20 % | 2 | 36 | 67.0 % |
+| +30 % | 3 | 32 | 68.3 % |
+<!-- /figures:sensitivity -->
+
+The table is not symmetric, and neither is the price. Understating a norm makes the agent
+escalate work it could have handled: analyst time, visible, nobody harmed. Overstating one
+lets files through uncontrolled — and **improves every figure a dashboard shows** while
+producing the only error that carries a fine.
+
+<!-- figures:margin -->
+The reference is used at **85 %** of its stated values. That margin is derived from the largest overstatement in the table (+14 %, on crypto-assets): 1 / 1.14 ≈ 0.88, rounded down. It is not chosen by looking at which value makes the results look best — that would be fitting the answer.
+<!-- /figures:margin -->
+
+---
+
+## What it gets wrong
+
+<!-- figures:failures -->
+50 wrong decisions out of 400. Automated decisions are correct 100.0 % of the time, 95 % interval [98–100], n=252.
+
+| Wrong decisions | Kind · rules that fired |
+|---|---|
+| 7 | escalade evitable · R-JURID |
+| 4 | escalade evitable · R-JURID+R-PIECE+R-VOL |
+| 4 | escalade evitable · R-PIECE+R-VOL |
+| 2 | escalade evitable · R-JURID+R-PIECE |
+| 2 | escalade evitable · R-JURID+R-NOM+R-VOL |
+| 2 | escalade evitable · R-LISIB+R-PIECE+R-VOL |
+
+**No breach remains.** Every file that had to go to a human went to a human.
+
+The two worst remaining errors are wasted escalations — analyst time, not exposure:
+
+```
+C-0001 · Ferreira Logistics · societe · NL
+  sector      import-export, 16,985,718 EUR declared
+  screening   sanctions 0.17 · PEP 0.01
+  agent said  escalader (confidence 0.88)
+  should be   complement
+  R-LISIB   Unreadable document: immatriculation  [sharpness 0.70]
+  R-LISIB   Unreadable document: structure  [sharpness 0.70]
+  R-VOL     €16,985,718 declared, 5.9× the norm for “import-export”  [sharpness 0.88]
+```
+
+```
+C-0003 · Haddad Ventures · societe · GR
+  sector      restauration, 2,183,844 EUR declared
+  screening   sanctions 0.14 · PEP 0.07
+  agent said  escalader (confidence 0.95)
+  should be   complement
+  R-LISIB   Unreadable document: domicile  [sharpness 0.70]
+  R-BE25    1 beneficial owner(s) above 25 % not identified  [sharpness 1.00]
+  R-VOL     €2,183,844 declared, 8.7× the norm for “restauration”  [sharpness 0.95]
+```
+<!-- /figures:failures -->
+
+A count is a claim a reader takes on trust. A named file with the rules that fired beside
+the decision an analyst would have made is something a compliance officer can argue with —
+and arguing with it is the point.
 
 ---
 
