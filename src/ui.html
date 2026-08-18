@@ -38,7 +38,7 @@
 /* L'écran a déjà sa propre fonction `brancher` — celle qui recâble les boutons après un
  * rendu. On renomme à l'import : deux déclarations du même nom au premier niveau d'un
  * module est une erreur de syntaxe, et elle emporte l'écran entier, pas seulement la figure. */
-import { courbe, brancher as brancherFigures } from "/graphes.js";
+import { courbe, histogramme, brancher as brancherFigures } from "/graphes.js";
 const $ = (s) => document.querySelector(s);
 const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
 /*
@@ -99,6 +99,15 @@ const T = {
     filePartielle: (m, n) => `File de revue — ${m} affichés sur ${n}`,
     fileVide: "Rien à revoir. À ce réglage, l'agent tranche tout seul.",
     legende: "Le point « · » marque la décision que l'agent proposait. Aucune action n'est présélectionnée : c'est toi qui tranches.",
+    figSeuilTitre: (n) => `${n} dossiers, rangés par confiance de l'agent`,
+    figSeuilAria: "Distribution de la confiance de l'agent sur tous les dossiers. Sous le seuil, "
+      + "tout part à l'analyste. Au-dessus, la plupart sont décidés seuls, mais une part continue "
+      + "d'être escaladée par une règle qui ne dépend pas de la confiance.",
+    figSeuilEtiq: (s2) => `seuil ${s2}`,
+    figSeuilAvant: "tout part à l'analyste",
+    figSeuilApres: "l'agent décide seul…",
+    figSeuilCleSeul: "décidé seul",
+    figSeuilClePart: "laissé à un analyste",
     parLaRegle: "Escaladé par la règle elle-même — l'agent est sûr que ce dossier relève d'un analyste.",
     sousLeSeuil: (c, s) => `Confiance ${c.toFixed(2)} sous le seuil ${s.toFixed(2)} — décision laissée à un analyste`,
     aucuneRegle: "Aucune règle déclenchée — la décision reposerait sur une absence de motif.",
@@ -151,6 +160,15 @@ const T = {
     filePartielle: (m, n) => `Review queue — showing ${m} of ${n}`,
     fileVide: "Nothing to review. At this setting the agent decides everything itself.",
     legende: "The “·” marks what the agent proposed. No action is preselected — the call is yours.",
+    figSeuilTitre: (n) => `${n} files, ordered by the agent's confidence`,
+    figSeuilAria: "Distribution of the agent's confidence across every file. Below the threshold "
+      + "everything goes to an analyst. Above it most are decided alone, but a share keeps being "
+      + "escalated by a rule that does not depend on confidence.",
+    figSeuilEtiq: (s2) => `threshold ${s2}`,
+    figSeuilAvant: "all go to an analyst",
+    figSeuilApres: "the agent decides alone…",
+    figSeuilCleSeul: "decided alone",
+    figSeuilClePart: "left to an analyst",
     parLaRegle: "Escalated by the rule itself — the agent is certain this file belongs with an analyst.",
     sousLeSeuil: (c, s) => `Confidence ${c.toFixed(2)} below the ${s.toFixed(2)} bar — decision left to an analyst`,
     aucuneRegle: "No rule fired — the decision would rest on an absence of grounds.",
@@ -251,6 +269,31 @@ function blocChiffres(c) {
 
 function blocReglages(c) {
   const L = t();
+
+  /*
+   * Les dossiers dont l'écran parle, enfin dessinés.
+   *
+   * Le curseur seul est une promesse : deux nombres bougent et il faut croire que quelque
+   * chose s'est passé. Ici la population est là, le seuil est une ligne posée dessus, et
+   * la part hachurée montre ce que le curseur ne déplacera jamais — les escalades imposées
+   * par une règle certaine. C'est ce qui empêche de conclure « l'outil est cassé » en
+   * tirant le curseur d'un bout à l'autre.
+   */
+  const figSeuil = histogramme({
+    bandes: c.distribution.map((b) => ({ de: b.de, a: b.a, valeur: b.total, part: b.escalades })),
+    seuil: {
+      v: c.seuil,
+      etiquette: L.figSeuilEtiq(c.seuil.toFixed(2)),
+      avant: L.figSeuilAvant,
+      apres: L.figSeuilApres,
+    },
+    fmt: (v) => String(Math.round(v)),
+    fmtX: (v) => v.toFixed(2),
+    legende: [{ texte: L.figSeuilCleSeul }, { texte: L.figSeuilClePart, trame: true }],
+    hauteur: 262,
+    aria: L.figSeuilAria,
+  });
+
   $("#reglages").innerHTML = `
     <section class="feuillet"><div class="corps">
       <div class="titre">${esc(L.seuilTitre)}</div>
@@ -262,12 +305,16 @@ function blocReglages(c) {
         <span class="bout">${esc(L.seuilHaut)}</span>
         <span class="lecture" id="seuilVal">${c.seuil.toFixed(2)}</span>
       </div>
+      <div class="titre-fig">${esc(L.figSeuilTitre(c.total))}</div>${figSeuil}
       <div class="attribution">${L.attribution(c.parLaRegle, c.parLeSeuil)}</div>
       <div class="bascule">
         <input type="checkbox" id="ref" ${c.referentielActif ? "checked" : ""} />
         <label for="ref">${esc(L.refLabel)}</label>
       </div>
     </div></section>`;
+
+  /* Le bloc est réécrit entièrement à chaque changement : les écouteurs partent avec. */
+  brancherFigures($("#reglages"));
 
   const seuil = $("#seuil");
   seuil.oninput = () => { $("#seuilVal").textContent = Number(seuil.value).toFixed(2); };

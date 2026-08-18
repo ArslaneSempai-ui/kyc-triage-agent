@@ -159,9 +159,45 @@ export function chiffres() {
   const parLaRegle = escalades.filter((l) => !l.verdict.escalade).length;
   const parLeSeuil = escalades.length - parLaRegle;
 
+  /*
+   * La distribution des confiances, et ce que le seuil y découpe.
+   *
+   * L'écran disait « 400 dossiers » sans jamais les montrer. Le curseur bougeait, deux
+   * nombres changeaient, et rien ne disait *lesquels* traversaient. Surtout, rien ne
+   * montrait ce que le curseur ne peut pas déplacer : les escalades imposées par une règle
+   * certaine, qui restent là quel que soit le seuil. C'est la seule figure de cet écran où
+   * ça se voit — et c'est précisément ce qui empêche de conclure « l'outil est cassé »
+   * quand on tire le curseur d'un bout à l'autre sans grand effet.
+   *
+   * Les bandes sont calculées au seuil courant, donc recalculées à chaque appel : c'est
+   * le déplacement de la partie hachurée qui porte la démonstration.
+   */
+  const PAS = 0.05, BAS = 0.30;
+  const nBandes = Math.round((1 - BAS) / PAS);
+  const distribution = Array.from({ length: nBandes }, (_, i) => ({
+    de: Number((BAS + i * PAS).toFixed(2)),
+    a: Number((BAS + (i + 1) * PAS).toFixed(2)),
+    total: 0, escalades: 0,
+  }));
+  for (const l of lignes) {
+    /*
+     * La bande se trouve par comparaison, pas par division.
+     *
+     * `Math.floor((0.70 - 0.30) / 0.05)` vaut 7 et non 8 : la soustraction donne
+     * 0.39999999999999997. Les treize dossiers dont la confiance vaut exactement le seuil
+     * se rangeaient donc *sous* la ligne tout en n'étant pas escaladés — la figure aurait
+     * montré, à gauche du seuil, des dossiers que l'agent décide seul. Exactement ce
+     * qu'elle est là pour démentir.
+     */
+    const b = distribution.find((d) => l.verdict.confiance < d.a) ?? distribution[nBandes - 1]!;
+    b.total++;
+    if (l.verdict.decision === "escalader") b.escalades++;
+  }
+
   return {
     seuil: etat.seuil,
     referentielActif: etat.referentielActif,
+    distribution,
     total: b.total,
     automatises: b.automatises,
     tauxAutomatisation: b.tauxAutomatisation,
