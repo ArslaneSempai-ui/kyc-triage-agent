@@ -42,7 +42,25 @@ const PILOTE = `
     }
   };
   for (const etape of etapes) {
-    if (etape.endsWith("!")) {
+    /*
+     * Le glissement, écrit « sel~fraction ».
+     *
+     * Les figures de ces écrans sont des commandes : la scène qui compte n'est pas un
+     * champ rempli, c'est une limite qu'on déplace. Sans ça le film ne montrerait que des
+     * états, et un lecteur ne saurait pas que la figure se touche.
+     */
+    if (etape.includes("~")) {
+      const [sel, f] = etape.split("~");
+      const el = await attendre(sel);
+      if (el) {
+        const b = el.getBoundingClientRect();
+        const pt = (t) => new PointerEvent(t, { pointerId: 1, bubbles: true,
+          clientX: b.left + b.width * Number(f), clientY: b.top + b.height / 2 });
+        el.dispatchEvent(pt("pointerdown"));
+        window.dispatchEvent(pt("pointermove"));
+        window.dispatchEvent(pt("pointerup"));
+      }
+    } else if (etape.endsWith("!")) {
       const el = await attendre(etape.slice(0, -1));
       if (el) el.click();
     } else {

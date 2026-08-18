@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Triage des entrées en relation</title>
+<title>Onboarding triage — and where the agent hands over</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23fbfaf7'/%3E%3Crect x='2' y='4' width='12' height='1' fill='%23111'/%3E%3Crect x='2' y='7' width='12' height='1' fill='%23111'/%3E%3Crect x='2' y='11' width='12' height='2' fill='%23111'/%3E%3C/svg%3E" />
 <link rel="stylesheet" href="/registre.css" />
 </head>
@@ -13,9 +13,6 @@
     <div>
       <h1 id="h1"></h1>
       <p class="lede" id="lede"></p>
-    </div>
-    <div class="lang">
-      <button id="fr" type="button">FR</button><button id="en" type="button">EN</button>
     </div>
   </div>
 
@@ -38,7 +35,7 @@
 /* L'écran a déjà sa propre fonction `brancher` — celle qui recâble les boutons après un
  * rendu. On renomme à l'import : deux déclarations du même nom au premier niveau d'un
  * module est une erreur de syntaxe, et elle emporte l'écran entier, pas seulement la figure. */
-import { courbe, histogramme, brancher as brancherFigures } from "/graphes.js";
+import { courbe, histogramme, saisir, brancher as brancherFigures } from "/graphes.js";
 const $ = (s) => document.querySelector(s);
 const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
 /*
@@ -55,75 +52,15 @@ const api = async (chemin, corps) => {
   return r.json();
 };
 
-/**
- * Les deux langues dans un seul dictionnaire.
+/*
+ * Les intitulés de l'écran, en anglais.
  *
- * L'outil est une pièce de portfolio montrée à des interlocuteurs anglophones, et le
- * README est en anglais. Une interface uniquement française annulait le bénéfice.
+ * Le lecteur visé est un recruteur américain, et le README est en anglais : une bascule de
+ * langue faisait écrire deux fois chaque libellé pour une moitié que personne ne lit. Le
+ * référentiel, lui, reste bilingue côté modèle — un article de règlement français se cite
+ * dans sa langue — et l'écran en lit la version anglaise.
  */
 const T = {
-  fr: {
-    h1: "Triage des entrées en relation",
-    provenance: "Chaque chiffre de cette page est <b>retrouvé</b> dans un texte public, <b>mesuré</b> en faisant tourner le code, <b>supposé</b> parce que personne ici ne peut le connaître, ou <b>choisi</b> par moi. Le README dit lequel, un par un.",
-    lede: "L'agent décide, cite la clause qui le motive, et s'arrête quand il n'est pas sûr.",
-    releve: "Relevé du portefeuille",
-    auto: "traité sans humain", enFile: "dans la file",
-    evitables: "escalades évitables", manquements: "manquements",
-    justesse: "justesse en automatique", accord: "l'humain confirme l'agent",
-    accordAttente: (n) => `${n} décision(s) avant de pouvoir conclure`,
-
-    seuilTitre: "Jusqu'où l'agent décide seul",
-    seuilQuoi: "En dessous de cette confiance, il passe la main plutôt que de trancher. Ce réglage appartient au métier, pas à qui écrit le code.",
-    seuilBas: "laisse passer, quitte à se tromper", seuilHaut: "ne décide que s'il est sûr",
-    seuilNom: "Seuil de confiance en dessous duquel l'agent passe la main",
-    attribution: (regle, seuil) =>
-      `Sur les escalades actuelles, <b>${regle}</b> viennent d'une règle qui en est sûre — le curseur ne les déplacera pas. Seules <b>${seuil}</b> dépendent de ce réglage.`,
-    refLabel: "Donner à l'agent les volumes habituels par secteur — sans eux, il envoie chez un analyste des dossiers parfaitement ordinaires",
-
-    compromisTitre: "Ce que coûte chaque réglage",
-    compromisQuoi: "Mesuré sur les 400 dossiers. Un manquement est une entrée en relation non contrôlée ; une escalade évitable est du temps analyste dépensé pour rien.",
-    figAutoTitre: "Ce que le seuil automatise, et à quelle justesse",
-    figAutoAria: "Deux courbes contre le seuil : la part automatisée chute par paliers pendant que la justesse des décisions automatiques ne bouge presque pas.",
-    figEscaladeTitre: "Le prix de ne rien manquer",
-    figEscaladeAria: "Courbe des escalades inutiles contre le seuil ; la zone teintée couvre les seuils où un dossier passe à travers.",
-    serAuto: "Part automatisée", serJuste: "Justesse des décisions automatiques",
-    serEscalades: "Escalades inutiles",
-    bandeManque: "un dossier passe à travers",
-    voirChiffres: "Voir tous les chiffres",
-    iciRepere: "seuil actuel",
-    colSeuil: "seuil", colAuto: "automatisé", colJuste: "justesse",
-    colManq: "manquements", colEvit: "escalades évitables",
-    avecRef: "avec référentiel sectoriel", sansRef: "sans référentiel",
-
-    fileTitre: (n) => `File de revue — ${n} dossier${n > 1 ? "s" : ""}`,
-    filePartielle: (m, n) => `File de revue — ${m} affichés sur ${n}`,
-    fileVide: "Rien à revoir. À ce réglage, l'agent tranche tout seul.",
-    legende: "Le point « · » marque la décision que l'agent proposait. Aucune action n'est présélectionnée : c'est toi qui tranches.",
-    figSeuilTitre: (n) => `${n} dossiers, rangés par confiance de l'agent`,
-    figSeuilAria: "Distribution de la confiance de l'agent sur tous les dossiers. Sous le seuil, "
-      + "tout part à l'analyste. Au-dessus, la plupart sont décidés seuls, mais une part continue "
-      + "d'être escaladée par une règle qui ne dépend pas de la confiance.",
-    figSeuilEtiq: (s2) => `seuil ${s2}`,
-    figSeuilAvant: "tout part à l'analyste",
-    figSeuilApres: "l'agent décide seul…",
-    figSeuilCleSeul: "décidé seul",
-    figSeuilClePart: "laissé à un analyste",
-    parLaRegle: "Escaladé par la règle elle-même — l'agent est sûr que ce dossier relève d'un analyste.",
-    sousLeSeuil: (c, s) => `Confiance ${c.toFixed(2)} sous le seuil ${s.toFixed(2)} — décision laissée à un analyste`,
-    aucuneRegle: "Aucune règle déclenchée — la décision reposerait sur une absence de motif.",
-    motifChamp: "Motif de ta décision (facultatif)",
-    proposeTitre: "Ce que l'agent proposait",
-    nettete: "netteté", confiance: "confiance", declares: "déclarés", opere: "opère vers",
-
-    traiteesTitre: "Décisions humaines récentes",
-    traiteesVide: "Aucune décision humaine pour l'instant.",
-    proposait: "l'agent proposait :",
-    remise: "Vider les décisions enregistrées",
-    remiseConfirme: "Effacer toutes les décisions humaines enregistrées ?",
-
-    approuver: "Approuver", complement: "Demander un complément", escalader: "Escalader à la conformité",
-  },
-  en: {
     h1: "Onboarding triage",
     provenance: "Every figure on this page is <b>retrieved</b> from a public source, <b>measured</b> by running the code, <b>assumed</b> because nobody here can know it, or <b>chosen</b> by me. The README says which, one by one.",
     lede: "The agent decides, cites the clause behind it, and stops when it isn't sure.",
@@ -135,10 +72,9 @@ const T = {
 
     seuilTitre: "How far the agent decides alone",
     seuilQuoi: "Below this confidence it hands the file over instead of deciding. This setting belongs to the business, not to whoever writes the code.",
-    seuilBas: "decides often, even when wrong", seuilHaut: "decides only when confident",
     seuilNom: "Confidence bar below which the agent hands over",
     attribution: (regle, seuil) =>
-      `Of the current escalations, <b>${regle}</b> come from a rule that is certain — the slider won't move those. Only <b>${seuil}</b> depend on this setting.`,
+      `Of the current escalations, <b>${regle}</b> come from a rule that is certain — dragging the line will not move those. Only <b>${seuil}</b> depend on where you put it.`,
     refLabel: "Give the agent the usual volumes per sector — without them it sends perfectly ordinary files to an analyst",
 
     compromisTitre: "What each setting costs",
@@ -164,7 +100,7 @@ const T = {
     figSeuilAria: "Distribution of the agent's confidence across every file. Below the threshold "
       + "everything goes to an analyst. Above it most are decided alone, but a share keeps being "
       + "escalated by a rule that does not depend on confidence.",
-    figSeuilEtiq: (s2) => `threshold ${s2}`,
+    figSeuilEtiq: (s2, n) => `threshold ${s2} — ${n} files in this band`,
     figSeuilAvant: "all go to an analyst",
     figSeuilApres: "the agent decides alone…",
     figSeuilCleSeul: "decided alone",
@@ -183,7 +119,6 @@ const T = {
     remiseConfirme: "Erase every recorded human decision?",
 
     approuver: "Approve", complement: "Request more information", escalader: "Escalate to compliance",
-  },
 };
 
 /**
@@ -192,34 +127,24 @@ const T = {
  * « particulier » et « conseil » sont des identifiants, pas de l'anglais. Les laisser
  * traverser l'écran anglais faisait passer une donnée pour un oubli de traduction.
  */
-const MOTS = {
-  fr: { particulier:"particulier", societe:"société",
-        "conseil":"conseil", "commerce de detail":"commerce de détail",
-        "restauration":"restauration", "immobilier":"immobilier",
-        "crypto-actifs":"crypto-actifs", "import-export":"import-export",
-        "art et antiquites":"art et antiquités",
-        identite:"pièce d'identité", domicile:"justificatif de domicile",
-        immatriculation:"immatriculation", structure:"structure de détention" },
-  en: { particulier:"individual", societe:"company",
+const MOTS = { particulier:"individual", societe:"company",
         "conseil":"consulting", "commerce de detail":"retail",
         "restauration":"food service", "immobilier":"real estate",
         "crypto-actifs":"crypto assets", "import-export":"import-export",
         "art et antiquites":"art and antiques",
         identite:"identity document", domicile:"proof of address",
-        immatriculation:"registration", structure:"ownership structure" },
+        immatriculation:"registration", structure:"ownership structure"
 };
-const mot = (cle) => MOTS[langue][cle] ?? cle;
+const mot = (cle) => MOTS[cle] ?? cle;
 
-let langue = localStorage.getItem("langue") === "fr" ? "fr" : "en";
-const t = () => T[langue];
+const t = () => T;
 
 let etat = null;
 let compromis = null;
 let occupe = false;
 
 const pc = (x) => (x * 100).toFixed(1) + " %";
-/* Le groupement des milliers suit la langue de lecture, pas celle du modèle. */
-const langNum = () => (langue === "fr" ? "fr-FR" : "en-GB");
+const langNum = () => "en-GB";
 const nb = (n) => Math.round(n).toLocaleString(langNum());
 const pcCran = (x) => Math.round(x * 100) + " %";
 
@@ -273,17 +198,25 @@ function blocReglages(c) {
   /*
    * Les dossiers dont l'écran parle, enfin dessinés.
    *
-   * Le curseur seul est une promesse : deux nombres bougent et il faut croire que quelque
-   * chose s'est passé. Ici la population est là, le seuil est une ligne posée dessus, et
-   * la part hachurée montre ce que le curseur ne déplacera jamais — les escalades imposées
-   * par une règle certaine. C'est ce qui empêche de conclure « l'outil est cassé » en
-   * tirant le curseur d'un bout à l'autre.
+   * La population est là, le seuil est une ligne posée dessus, et la part hachurée montre
+   * ce que la ligne ne déplacera jamais — les escalades imposées par une règle certaine.
+   * C'est ce qui empêche de conclure « l'outil est cassé » en tirant la ligne d'un bout à
+   * l'autre : une part du travail ne dépend pas de ce réglage, et elle est dessinée.
    */
+  /*
+   * La bande sous la main, trouvée par comparaison et non par division.
+   *
+   * `Math.floor((v - x0) / pas)` a déjà rangé treize dossiers du mauvais côté ici : la
+   * soustraction de deux flottants tombe un cheveu en dessous du compte rond.
+   */
+  const bande = c.distribution.find((b) => c.seuil < b.a) ?? c.distribution[c.distribution.length - 1];
+
   const figSeuil = histogramme({
     bandes: c.distribution.map((b) => ({ de: b.de, a: b.a, valeur: b.total, part: b.escalades })),
     seuil: {
       v: c.seuil,
-      etiquette: L.figSeuilEtiq(c.seuil.toFixed(2)),
+      saisissable: true,
+      etiquette: L.figSeuilEtiq(c.seuil.toFixed(2), nb(bande?.total ?? 0)),
       avant: L.figSeuilAvant,
       apres: L.figSeuilApres,
     },
@@ -298,13 +231,6 @@ function blocReglages(c) {
     <section class="feuillet"><div class="corps">
       <div class="titre">${esc(L.seuilTitre)}</div>
       <div class="quoi">${esc(L.seuilQuoi)}</div>
-      <div class="rang">
-        <span class="bout">${esc(L.seuilBas)}</span>
-        <input type="range" id="seuil" min="0.3" max="0.99" step="0.01" value="${c.seuil}"
-          aria-label="${esc(L.seuilNom)}" />
-        <span class="bout">${esc(L.seuilHaut)}</span>
-        <span class="lecture" id="seuilVal">${c.seuil.toFixed(2)}</span>
-      </div>
       <div class="titre-fig">${esc(L.figSeuilTitre(c.total))}</div>${figSeuil}
       <div class="attribution">${L.attribution(c.parLaRegle, c.parLeSeuil)}</div>
       <div class="bascule">
@@ -316,9 +242,16 @@ function blocReglages(c) {
   /* Le bloc est réécrit entièrement à chaque changement : les écouteurs partent avec. */
   brancherFigures($("#reglages"));
 
-  const seuil = $("#seuil");
-  seuil.oninput = () => { $("#seuilVal").textContent = Number(seuil.value).toFixed(2); };
-  seuil.onchange = () => envoyer("/api/seuil", { seuil: Number(seuil.value) });
+  /*
+   * Le seuil se tire sur la distribution qu'il coupe.
+   *
+   * C'était un curseur posé sous la figure : deux nombres bougeaient plus haut et il
+   * fallait croire que quelque chose s'était passé. Ici le lecteur attrape la ligne elle-
+   * même, au milieu des dossiers qu'elle sépare, et tout le reste de l'écran se recalcule
+   * derrière — y compris les deux courbes de compromis, dont le repère est ce seuil.
+   */
+  saisir($("#reglages"), ({ x }) => envoyer("/api/seuil", { seuil: x }, true), { x: c.seuil, nom: L.seuilNom });
+
   $("#ref").onchange = (e) => envoyer("/api/referentiel", { actif: e.target.checked });
 }
 
@@ -401,8 +334,8 @@ function blocRegles(regles) {
   }
   return regles.map((r) => `
     <div class="ligne">
-      <span class="intitule"><span class="reference">${esc(r.code)}</span> ${esc(r.constat[langue])}
-        <small>${esc(r.clause[langue])}</small></span>
+      <span class="intitule"><span class="reference">${esc(r.code)}</span> ${esc(r.constat.en)}
+        <small>${esc(r.clause.en)}</small></span>
       <span class="valeur">${r.nettete.toFixed(2)} <small>${esc(L.nettete)}</small></span>
     </div>`).join("");
 }
@@ -437,12 +370,9 @@ function dessiner() {
   const L = t();
   const { chiffres: c, file, traitees } = etat;
 
-  document.documentElement.lang = langue;
   $("#h1").textContent = L.h1;
   $("#provenanceLegende").innerHTML = L.provenance;
   $("#lede").textContent = L.lede;
-  $("#fr").className = langue === "fr" ? "on" : "";
-  $("#en").className = langue === "en" ? "on" : "";
 
   blocChiffres(c);
   blocReglages(c);
@@ -489,10 +419,21 @@ function brancher() {
   };
 }
 
-async function envoyer(chemin, corps) {
-  if (occupe) return;
+/*
+ * Un envoi à la fois, mais aucun geste perdu.
+ *
+ * Un glissement produit une soixantaine d'appels par seconde et le modèle en tient une
+ * trentaine. La première version jetait tout ce qui arrivait pendant qu'elle travaillait :
+ * la ligne suivait la main et les chiffres restaient sur une valeur d'il y a trois cents
+ * millisecondes — l'écran affichait deux instants différents à la fois. On ne garde donc
+ * que le dernier appel en attente, et on le part dès que la place est libre. Rien n'est
+ * jamais dessiné à partir de deux états.
+ */
+let enAttente = null;
+async function envoyer(chemin, corps, discret = false) {
+  if (occupe) { enAttente = [chemin, corps, discret]; return; }
   occupe = true;
-  for (const b of document.querySelectorAll("button.b")) b.disabled = true;
+  if (!discret) for (const b of document.querySelectorAll("button.b")) b.disabled = true;
   try {
     const r = await api(chemin, corps);
     if (r.erreur) { alert(r.erreur); return; }
@@ -500,12 +441,9 @@ async function envoyer(chemin, corps) {
     dessiner();
   } finally {
     occupe = false;
-    for (const b of document.querySelectorAll("button.b")) b.disabled = false;
+    if (!discret) for (const b of document.querySelectorAll("button.b")) b.disabled = false;
+    if (enAttente) { const suite = enAttente; enAttente = null; envoyer(...suite); }
   }
-}
-
-for (const l of ["fr", "en"]) {
-  $(`#${l}`).onclick = () => { langue = l; localStorage.setItem("langue", l); dessiner(); };
 }
 
 etat = await api("/api/etat");

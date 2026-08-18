@@ -62,7 +62,7 @@ ever support the sentence "the agent is systematically wrong here" instead of "t
 analysts are complaining". The agreement rate stays hidden until ten decisions exist —
 a rate over two samples is noise wearing a percentage sign.
 
-The slider carries its own honesty check. Most escalations come from rules that are
+The threshold carries its own honesty check. Most escalations come from rules that are
 *certain*, and no amount of dragging will move those; the screen says how many of the
 current escalations the setting actually governs. A control that appears to do nothing
 teaches people the tool is broken.

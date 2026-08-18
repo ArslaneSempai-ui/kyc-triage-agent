@@ -507,10 +507,18 @@ export function histogramme({ bandes, seuil, fmt = String, fmtX = String, legend
     if (!(b.valeur > 0)) continue;
     const g = px(b.de), d = px(b.a), large = Math.max(1, d - g - 3);
     const y = py(b.valeur);
-    const lecture = ech(`<u>${fmtX(b.de)} – ${fmtX(b.a)}</u><br>${fmt(b.valeur)}`
+    /*
+     * En mode commande, pas de lecture au survol.
+     *
+     * La prise couvre le cadre pour que la ligne s'attrape n'importe où ; elle intercepte
+     * donc le survol des barres. Laisser les `data-lecture` en place serait promettre une
+     * lecture qui ne s'affiche jamais. Ce qu'elles disaient passe dans l'étiquette du
+     * seuil, qui, elle, suit la main.
+     */
+    const lecture = seuil?.saisissable ? "" : ech(`<u>${fmtX(b.de)} – ${fmtX(b.a)}</u><br>${fmt(b.valeur)}`
       + (fini(b.part) ? ` · ${fmt(b.part)}` : ""));
     svg += `<rect class="bande-hist" x="${arr(g + 1.5)}" y="${y}" width="${arr(large)}"
-      height="${arr(Math.max(1, sol - y))}" data-lecture="${lecture}" />`;
+      height="${arr(Math.max(1, sol - y))}"${lecture ? ` data-lecture="${lecture}"` : ""} />`;
     if (fini(b.part) && b.part > 0) {
       const h = Math.max(1, sol - py(b.part));
       svg += `<rect class="bande-part" fill="url(#${id})" x="${arr(g + 1.5)}" y="${arr(sol - h)}"
@@ -534,8 +542,16 @@ export function histogramme({ bandes, seuil, fmt = String, fmtX = String, legend
   }
 
   for (const v of seuil && fini(seuil.v) ? [x0, seuil.v, x1] : [x0, x1]) {
+    if (seuil && v !== seuil.v && Math.abs(px(v) - px(seuil.v)) < 42) continue;
     const ancrage = v === x0 ? "start" : v === x1 ? "end" : "middle";
     svg += `<text class="grad" x="${px(v)}" y="${sol + 18}" text-anchor="${ancrage}">${ech(fmtX(v))}</text>`;
+  }
+
+  /* La prise, en dernier pour être au-dessus : on attrape la ligne n'importe où dans le
+   * cadre, pas sur son trait. */
+  if (seuil?.saisissable && fini(seuil.v)) {
+    svg += `<rect class="carte-prise" x="${M.gauche}" y="${ciel}" width="${arr(L - M.gauche - M.droite)}"
+      height="${arr(sol - ciel)}" data-x0="${x0}" data-x1="${x1}" data-y0="0" data-y1="1" />`;
   }
 
   if (legende?.length) {
@@ -856,6 +872,279 @@ export function axe({ bas, haut, seuil, bandes = [], fmtX = String, aria }) {
     svg += `<text class="grad" x="${px(v)}" y="${axeY + 18}" text-anchor="${ancrage}">${ech(fmtX(v))}</text>`;
   }
   return cadre(svg, hauteur, aria) + "</figure>";
+}
+
+/**
+ * LA CARTE DE DÉCISION — et c'est une commande, pas une illustration.
+ *
+ * Une figure qui se contente d'illustrer un nombre déjà écrit à côté est du bruit, même
+ * bien dessinée. Celle-ci a le droit d'exister pour deux raisons : elle **explique** — on
+ * voit qu'il existe une frontière, et quelle forme elle a — et elle **bouge sous la main** :
+ * le lecteur attrape sa propre position et la déplace, tout le reste se recalcule.
+ *
+ * Le renversement compte. Un curseur en bas de page qui fait frémir des barres en haut
+ * demande au lecteur de piloter à l'aveugle une grandeur qu'il ne connaît pas. Ici il pose
+ * son établissement sur un territoire et lit la réponse à cet endroit-là. La question passe
+ * de « combien vaut ce nombre ? », à quoi personne ne peut répondre, à « de quel côté de
+ * cette ligne sommes-nous ? », à quoi un responsable répond en une phrase.
+ *
+ * L'appelant fournit `verdict(x, y) → boolean` : la carte ne sait rien du modèle, elle
+ * l'interroge. Le point est déplacé par `onDeplace`, qui reçoit les coordonnées du monde.
+ *
+ * @param {{x:{de:number, a:number, nom:string, fmt?:(v:number)=>string},
+ *          y:{de:number, a:number, nom:string, fmt?:(v:number)=>string},
+ *          verdict:(x:number,y:number)=>boolean, ici:{x:number,y:number},
+ *          bande?:{de:number,a:number,nom:string},
+ *          cles:{pour:string, contre:string}, aria:string, resolution?:number}} o
+ */
+export function carte({ x, y, verdict, ici, bande, cles, aria, resolution = 46 }) {
+  const G = 78, D = 150, T = 22, B = 46, H = 330;
+  const px = (v) => arr(G + ((v - x.de) / ((x.a - x.de) || 1)) * (L - G - D));
+  const py = (v) => arr(T + (1 - (v - y.de) / ((y.a - y.de) || 1)) * (H - T - B));
+  const fx = x.fmt ?? String, fy = y.fmt ?? String;
+
+  /*
+   * Deux territoires et une frontière — pas une grille de tuiles.
+   *
+   * Premier essai : une case peinte par point d'échantillonnage. Ça se lisait exactement
+   * comme une mise en forme conditionnelle de tableur, ce qui est le reproche le plus juste
+   * qu'on puisse faire à une figure. Ici la frontière est **suivie** : pour chaque colonne on
+   * cherche où le verdict change, et on trace la marche. Le résultat garde les
+   * discontinuités — une embauche, un palier — qu'une courbe lissée effacerait, sans
+   * ressembler à un quadrillage.
+   */
+  const pasX = (x.a - x.de) / resolution, nY = Math.round(resolution * 1.6);
+  const pasY = (y.a - y.de) / nY;
+  const frontiere = [];
+  for (let i = 0; i <= resolution; i++) {
+    const vx = x.de + Math.min(i, resolution - 0.5) * pasX + pasX / 2;
+    let j = 0;
+    while (j < nY && verdict(vx, y.de + (j + 0.5) * pasY)) j++;
+    frontiere.push({ px: px(x.de + i * pasX), py: py(y.de + j * pasY) });
+  }
+  const marche = frontiere.map((p, i) =>
+    (i === 0 ? `M ${p.px} ${p.py}` : `L ${frontiere[i - 1].px} ${p.py} L ${p.px} ${p.py}`)).join(" ");
+  const basY = py(y.de), hautY = py(y.a);
+
+  let svg = `<path class="carte-zone pour" d="${marche} L ${px(x.a)} ${basY} L ${px(x.de)} ${basY} Z" />`
+    + `<path class="carte-zone contre" d="${marche} L ${px(x.a)} ${hautY} L ${px(x.de)} ${hautY} Z" />`
+    + `<path class="carte-front" fill="none" d="${marche}" />`;
+  if (bande) {
+    svg += `<rect class="carte-bande" x="${px(bande.de)}" y="${T}" width="${arr(px(bande.a) - px(bande.de))}" height="${H - T - B}" />`
+      + `<text class="carte-bande-nom" x="${arr((px(bande.de) + px(bande.a)) / 2)}" y="${T + 14}" text-anchor="middle">${ech(bande.nom)}</text>`;
+  }
+
+  /* La zone qui capte le geste couvre exactement le territoire, pas la figure entière. */
+  svg += `<rect class="carte-prise" x="${G}" y="${T}" width="${L - G - D}" height="${H - T - B}"
+    data-x0="${x.de}" data-x1="${x.a}" data-y0="${y.de}" data-y1="${y.a}" />`;
+
+  svg += `<line class="carte-guide" x1="${px(ici.x)}" y1="${T}" x2="${px(ici.x)}" y2="${H - B}" />`
+    + `<line class="carte-guide" x1="${G}" y1="${py(ici.y)}" x2="${L - D}" y2="${py(ici.y)}" />`
+    + `<circle class="carte-ici" cx="${px(ici.x)}" cy="${py(ici.y)}" r="7" />`;
+
+  svg += `<text class="carte-cle pour" x="${L - D + 14}" y="${T + 34}">${ech(cles.pour)}</text>`
+    + `<text class="carte-cle contre" x="${L - D + 14}" y="${T + 54}">${ech(cles.contre)}</text>`
+    + `<text class="carte-prise-mot" x="${L - D + 14}" y="${T + 84}">${ech(cles.geste ?? "")}</text>`;
+
+  for (const v of [x.de, ici.x, x.a]) {
+    const a = v === x.de ? "start" : v === x.a ? "end" : "middle";
+    svg += `<text class="grad${v === ici.x ? " t-neutre" : ""}" x="${px(v)}" y="${H - B + 18}" text-anchor="${a}">${ech(fx(v))}</text>`;
+  }
+  for (const v of [y.de, ici.y, y.a]) {
+    svg += `<text class="grad${v === ici.y ? " t-neutre" : ""}" x="${G - 8}" y="${py(v) + 4}" text-anchor="end">${ech(fy(v))}</text>`;
+  }
+  /* Le titre de l'ordonnée se pose en haut à gauche, aligné sur le début du cadre : ancré à
+   * droite de la gouttière, un intitulé un peu long sortait de la figure. */
+  svg += `<text class="axe-titre" x="${G - 46}" y="${T - 8}" text-anchor="start">${ech(y.nom)}</text>`
+    + `<text class="axe-titre" x="${arr((G + L - D) / 2)}" y="${H - 6}" text-anchor="middle">${ech(x.nom)}</text>`;
+
+  return cadre(svg, H, aria) + "</figure>";
+}
+
+/**
+ * Rendre une carte saisissable.
+ *
+ * Appelé après chaque rendu, comme `brancher`. Le geste marche à la souris et au doigt ;
+ * les flèches du clavier déplacent le point d'un pas, parce qu'une figure qui n'est
+ * atteignable qu'à la souris n'est pas une commande pour tout le monde.
+ */
+export function saisir(racine, onDeplace, courant) {
+  const prise = racine.querySelector(".carte-prise");
+  if (!prise) return;
+  const d = prise.dataset;
+  /*
+   * Le clavier, et le retour du foyer.
+   *
+   * Le bloc est réécrit entièrement à chaque déplacement : la prise focalisée disparaît
+   * avec lui, et une flèche pressée deux fois de suite ne trouvait plus personne. Le
+   * drapeau vit donc sur la racine, qui survit au rendu.
+   */
+  if (!prise.dataset.branche) {
+    prise.setAttribute("tabindex", "0");
+    prise.setAttribute("role", "slider");
+    prise.addEventListener("focus", () => { racine.dataset.priseFocus = "1"; });
+    /* Un noeud retiré du document émet `blur` comme s'il avait été quitté. Effacer le
+     * drapeau là-dessus, c'était perdre le foyer à chaque flèche : une figure pilotable au
+     * clavier pour un seul appui. On ne l'efface que si la prise est encore en place. */
+    prise.addEventListener("blur", () => { if (prise.isConnected) delete racine.dataset.priseFocus; });
+  }
+  if (courant) {
+    /* Un curseur sans nom se lit « slider, 5.4 » : le lecteur d'écran dit la valeur et pas
+     * ce qu'elle règle. */
+    if (courant.nom) prise.setAttribute("aria-label", courant.nom);
+    prise.setAttribute("aria-valuemin", d.x0);
+    prise.setAttribute("aria-valuemax", d.x1);
+    prise.setAttribute("aria-valuenow", String(Math.round(courant.x * 100) / 100));
+  }
+  if (racine.dataset.priseFocus === "1") prise.focus({ preventScroll: true });
+  if (prise.dataset.branche) return;
+  prise.dataset.branche = "1";
+  /*
+   * Du geste vers le modèle, en passant par la boîte de la prise elle-même.
+   *
+   * La version précédente convertissait par le viewBox du SVG. C'est juste tant que le
+   * cadre n'est pas mis en boîte : dès que le conteneur n'a plus le rapport du viewBox,
+   * `preserveAspectRatio` centre le dessin et laisse des marges que ce calcul ignore — un
+   * geste au milieu de la figure sortait en butée. La prise couvre exactement l'étendue
+   * utile, donc sa propre boîte écran est la conversion, quelle que soit la mise en page.
+   */
+  const monde = (evt, b) => {
+    const part = (u, taille) => Math.min(1, Math.max(0, u / (taille || 1)));
+    return {
+      x: +d.x0 + part(evt.clientX - b.left, b.width) * (+d.x1 - +d.x0),
+      y: +d.y1 - part(evt.clientY - b.top, b.height) * (+d.y1 - +d.y0),
+    };
+  };
+  /*
+   * Le geste vit sur la fenêtre, pas sur la prise.
+   *
+   * Le bloc se réécrit à chaque déplacement : la prise que le doigt tenait est détachée du
+   * document au premier mouvement, et avec elle la capture du pointeur. Le glissement
+   * mourait après un pixel — pire, la boîte d'un noeud détaché mesure zéro, donc la valeur
+   * partait en butée sans rien signaler. On prend donc la géométrie une fois, au moment où
+   * le geste commence, et on écoute la fenêtre jusqu'à ce qu'il finisse.
+   */
+  prise.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    const boite = prise.getBoundingClientRect();
+    const bouge = (ev) => onDeplace(monde(ev, boite));
+    const fini = () => {
+      window.removeEventListener("pointermove", bouge);
+      for (const f of ["pointerup", "pointercancel"]) window.removeEventListener(f, fini);
+      delete racine.dataset.priseTire;
+    };
+    racine.dataset.priseTire = "1";
+    window.addEventListener("pointermove", bouge);
+    for (const f of ["pointerup", "pointercancel"]) window.addEventListener(f, fini);
+    bouge(e);
+  });
+
+  /* Une figure-commande atteignable à la seule souris n'est une commande que pour une
+   * partie des lecteurs. Un centième de l'étendue par flèche, un dixième par page. */
+  if (!courant) return;
+  const [ex, ey] = [+d.x1 - +d.x0, +d.y1 - +d.y0];
+  prise.addEventListener("keydown", (e) => {
+    const g = { ArrowLeft: [-0.01, 0], ArrowRight: [0.01, 0], ArrowDown: [0, -0.01], ArrowUp: [0, 0.01],
+                PageDown: [-0.1, 0], PageUp: [0.1, 0], Home: [-9, 0], End: [9, 0] }[e.key];
+    if (!g) return;
+    e.preventDefault();
+    /* Qui appuie sur une flèche a le foyer, par définition : on le note ici plutôt que
+     * d'attendre l'événement `focus`, qui ne part pas si la fenêtre n'est pas au premier
+     * plan — et sans lui la deuxième flèche ne trouvait plus personne. */
+    racine.dataset.priseFocus = "1";
+    const borne = (v, a, b) => Math.min(Math.max(v, a), b);
+    onDeplace({
+      x: borne(courant.x + g[0] * ex, +d.x0, +d.x1),
+      y: borne((courant.y ?? 0) + g[1] * ey, +d.y0, +d.y1),
+    });
+  });
+}
+
+/**
+ * Une part, écrite sans mentir sur le plein.
+ *
+ * 780 dossiers sur 781 arrondissent à 100 %, et la figure dirait alors qu'aucun ne manque
+ * quand il en manque un — sur un écran dont tout le propos est qu'une moyenne cache des
+ * cas. Le plein est réservé au plein, le vide au vide.
+ */
+export function partEcrite(dedans, total) {
+  if (!total) return "—";
+  if (dedans === total) return "100 %";
+  if (dedans === 0) return "0 %";
+  return Math.min(99, Math.max(1, Math.round((100 * dedans) / total))) + " %";
+}
+
+/**
+ * LES STRATES — une promesse qu'on déplace, et les populations qu'elle sépare.
+ *
+ * Une moyenne ne décrit personne quand la population en cache plusieurs. Le dire est un
+ * lieu commun ; le montrer demande de séparer les strates sur un même axe et de laisser le
+ * lecteur poser lui-même la limite qui l'intéresse. Ici c'est un délai promis : il le tire,
+ * et il lit, strate par strate, ce que sa promesse tient vraiment. La moyenne, elle,
+ * n'apparaît nulle part — c'est le propos.
+ *
+ * Les cas sont regroupés en fines colonnes plutôt que dessinés un par un : mille deux cents
+ * traits redessinés à chaque mouvement du doigt saccadent, et une colonne de six cas se lit
+ * mieux qu'un empilement de traits qui se recouvrent.
+ *
+ * @param {{strates: Array<{nom:string, valeurs:number[]}>, seuil:{v:number, etiquette?:string},
+ *          bas?:number, haut?:number, fmtX?:(v:number)=>string,
+ *          compte?:(dedans:number, total:number)=>string, aria:string}} o
+ */
+export function strates({ strates: liste, seuil, bas, haut, fmtX = String, compte, aria }) {
+  if (!liste?.length) return "";
+  const toutes = liste.flatMap((s) => s.valeurs).filter(fini);
+  if (!toutes.length) return "";
+  const x0 = bas ?? 0;
+  const x1 = haut ?? Math.max(...toutes) * 1.04;
+  /* Les gouttières tiennent le plus long des intitulés et le plus long des comptes :
+   * « came back twice or more » et « 100 % — 780/781 » sortaient tous les deux du cadre,
+   * amputés sans un mot. Mesurées à la chasse de la police du registre. */
+  const G = 178, D = 142, T = 30, B = 44, RANG = 62;
+  const H = T + liste.length * RANG + B;
+  const px = (v) => arr(G + ((Math.min(Math.max(v, x0), x1) - x0) / ((x1 - x0) || 1)) * (L - G - D));
+  const NB = 116, pas = (x1 - x0) / NB;
+
+  let svg = "";
+  liste.forEach((st, i) => {
+    const y = T + i * RANG;
+    const sol = y + RANG - 16;
+    const seaux = new Array(NB).fill(0);
+    for (const v of st.valeurs) seaux[Math.min(NB - 1, Math.max(0, Math.floor((v - x0) / pas)))]++;
+    const plus = Math.max(...seaux, 1);
+    const largeur = (L - G - D) / NB;
+    seaux.forEach((n, j) => {
+      if (!n) return;
+      const h = 6 + (n / plus) * (RANG - 30);
+      const v = x0 + (j + 0.5) * pas;
+      svg += `<rect class="strate-col ${v <= seuil.v ? "tenu" : "rate"}" x="${arr(px(x0 + j * pas))}"
+        y="${arr(sol - h)}" width="${arr(Math.max(1.4, largeur - 0.6))}" height="${arr(h)}" />`;
+    });
+    const dedans = st.valeurs.filter((v) => v <= seuil.v).length;
+    svg += `<line class="strate-sol" x1="${G}" y1="${sol}" x2="${L - D}" y2="${sol}" />`
+      + `<text class="strate-nom" x="${G - 12}" y="${sol - 2}" text-anchor="end">${ech(st.nom)}</text>`
+      + `<text class="strate-compte" x="${L - D + 12}" y="${sol - 2}">${ech(compte ? compte(dedans, st.valeurs.length) : `${dedans}/${st.valeurs.length}`)}</text>`;
+  });
+
+  /* La prise couvre toute la hauteur : on saisit la limite n'importe où, pas seulement sur
+   * son trait — viser une ligne de deux pixels n'est pas une commande. */
+  svg += `<rect class="carte-prise" x="${G}" y="${T - 10}" width="${L - G - D}" height="${H - T - B + 20}"
+    data-x0="${x0}" data-x1="${x1}" data-y0="0" data-y1="1" />`;
+  svg += `<line class="strate-limite" x1="${px(seuil.v)}" y1="${T - 10}" x2="${px(seuil.v)}" y2="${H - B + 6}" />`
+    + `<polygon class="strate-poignee" points="${px(seuil.v) - 6},${T - 16} ${px(seuil.v) + 6},${T - 16} ${px(seuil.v)},${T - 6}" />`;
+  if (seuil.etiquette) {
+    const colle = px(seuil.v) - G < 120;
+    svg += `<text class="strate-etiq" x="${arr(px(seuil.v) + (colle ? 10 : -10))}" y="${T - 20}"
+      text-anchor="${colle ? "start" : "end"}">${ech(seuil.etiquette)}</text>`;
+  }
+  /* La graduation de la limite prime sur les bornes : quand elle s'en approche, c'est la
+   * borne qui s'efface. Les deux imprimées l'une sur l'autre donnaient « 1 day5 days ». */
+  for (const v of [x0, seuil.v, x1]) {
+    if (v !== seuil.v && Math.abs(px(v) - px(seuil.v)) < 46) continue;
+    const a = v === x0 ? "start" : v === x1 ? "end" : "middle";
+    svg += `<text class="grad${v === seuil.v ? " t-neutre" : ""}" x="${px(v)}" y="${H - B + 24}" text-anchor="${a}">${ech(fmtX(v))}</text>`;
+  }
+  return cadre(svg, H, aria) + "</figure>";
 }
 
 /**

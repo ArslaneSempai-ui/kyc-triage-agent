@@ -3,7 +3,7 @@
  *
  * "Clone this and run `npm start`" is a request most readers decline. A link they can click
  * is a different artefact — and a *static snapshot* of one is worse than nothing, because
- * the first thing anyone does is drag the confidence slider and watch nothing happen.
+ * the first thing anyone does is drag the confidence line and watch what it does not move.
  *
  * So the demo is not a snapshot. The agent, the case generator and the review queue are
  * pure arithmetic on a seeded draw, with no database and no network, which means the whole
@@ -64,8 +64,9 @@ window.LOCAL = async (chemin, corps) => {
  */
 const BANNER = `<p class="renvoi" style="margin-bottom:1.5rem">
 This runs entirely in your browser — no server, no data leaves your machine, and the review
-queue you build is yours alone. The 400 client files are <b>synthetic and seeded</b>; the
-regulations each decision cites are real and linked.
+queue you build is yours alone. <b>Drag the threshold line</b> across the confidence
+distribution and watch what it moves — and what it never will. The 400 client files are
+<b>synthetic and seeded</b>; the regulations each decision cites are real and linked.
 <a href="https://github.com/ArslaneSempai-ui/kyc-triage-agent">Source and method</a>.
 </p>`;
 

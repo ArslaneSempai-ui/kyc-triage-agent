@@ -5,61 +5,35 @@
       "type": "gif",
       "taille": [
         900,
-        640
+        750
       ],
-      "echelle": 1,
-      "duree": 320,
+      "echelle": 2,
+      "duree": 800,
       "fenetre": [
-        900,
-        2200
+        1100,
+        2000
       ],
-      "depart": 820,
-      "hauteurUtile": 640,
+      "depart": 690,
+      "hauteurUtile": 920,
       "scenes": [
         [
-          "#seuil=0.95"
+          "#ref!",
+          "#reglages .carte-prise~0.93"
         ],
         [
-          "#seuil=0.9"
+          "#reglages .carte-prise~0.79"
         ],
         [
-          "#seuil=0.85"
+          "#reglages .carte-prise~0.57"
         ],
         [
-          "#seuil=0.8"
+          "#reglages .carte-prise~0.36"
         ],
         [
-          "#seuil=0.75"
+          "#reglages .carte-prise~0.07"
         ],
         [
-          "#seuil=0.7"
-        ],
-        [
-          "#seuil=0.65"
-        ],
-        [
-          "#seuil=0.6"
-        ],
-        [
-          "#seuil=0.55"
-        ],
-        [
-          "#seuil=0.5"
-        ],
-        [
-          "#seuil=0.45"
-        ],
-        [
-          "#seuil=0.4"
-        ],
-        [
-          "#seuil=0.35"
-        ],
-        [
-          "#seuil=0.3"
-        ],
-        [
-          "#seuil=0.3",
+          "#reglages .carte-prise~0.57",
           "#ref!"
         ]
       ]
@@ -72,7 +46,7 @@
         3200
       ],
       "echelle": 2,
-      "depart": 1900,
+      "depart": 2145,
       "hauteurUtile": 720
     }
   ]
