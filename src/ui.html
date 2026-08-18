@@ -35,6 +35,10 @@
 </main>
 
 <script type="module">
+/* L'écran a déjà sa propre fonction `brancher` — celle qui recâble les boutons après un
+ * rendu. On renomme à l'import : deux déclarations du même nom au premier niveau d'un
+ * module est une erreur de syntaxe, et elle emporte l'écran entier, pas seulement la figure. */
+import { courbe, brancher as brancherFigures } from "/graphes.js";
 const $ = (s) => document.querySelector(s);
 const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
 /*
@@ -61,7 +65,7 @@ const T = {
   fr: {
     h1: "Triage des entrées en relation",
     provenance: "Chaque chiffre de cette page est <b>retrouvé</b> dans un texte public, <b>mesuré</b> en faisant tourner le code, <b>supposé</b> parce que personne ici ne peut le connaître, ou <b>choisi</b> par moi. Le README dit lequel, un par un.",
-    lede: "L'agent applique la procédure sur chaque dossier, cite la clause qui fonde sa décision, et s'arrête quand il n'est pas sûr. Ce qui reste ci-dessous est ce qu'il n'a pas voulu trancher seul.",
+    lede: "L'agent décide, cite la clause qui le motive, et s'arrête quand il n'est pas sûr.",
     releve: "Relevé du portefeuille",
     auto: "traité sans humain", enFile: "dans la file",
     evitables: "escalades évitables", manquements: "manquements",
@@ -78,6 +82,15 @@ const T = {
 
     compromisTitre: "Ce que coûte chaque réglage",
     compromisQuoi: "Mesuré sur les 400 dossiers. Un manquement est une entrée en relation non contrôlée ; une escalade évitable est du temps analyste dépensé pour rien.",
+    figAutoTitre: "Ce que le seuil automatise, et à quelle justesse",
+    figAutoAria: "Deux courbes contre le seuil : la part automatisée chute par paliers pendant que la justesse des décisions automatiques ne bouge presque pas.",
+    figEscaladeTitre: "Le prix de ne rien manquer",
+    figEscaladeAria: "Courbe des escalades inutiles contre le seuil ; la zone teintée couvre les seuils où un dossier passe à travers.",
+    serAuto: "Part automatisée", serJuste: "Justesse des décisions automatiques",
+    serEscalades: "Escalades inutiles",
+    bandeManque: "un dossier passe à travers",
+    voirChiffres: "Voir tous les chiffres",
+    iciRepere: "seuil actuel",
     colSeuil: "seuil", colAuto: "automatisé", colJuste: "justesse",
     colManq: "manquements", colEvit: "escalades évitables",
     avecRef: "avec référentiel sectoriel", sansRef: "sans référentiel",
@@ -104,7 +117,7 @@ const T = {
   en: {
     h1: "Onboarding triage",
     provenance: "Every figure on this page is <b>retrieved</b> from a public source, <b>measured</b> by running the code, <b>assumed</b> because nobody here can know it, or <b>chosen</b> by me. The README says which, one by one.",
-    lede: "The agent applies the procedure to each file, cites the clause behind its decision, and stops when it isn't confident. What's left below is what it wouldn't decide alone.",
+    lede: "The agent decides, cites the clause behind it, and stops when it isn't sure.",
     releve: "Portfolio statement",
     auto: "handled without a human", enFile: "in the queue",
     evitables: "avoidable escalations", manquements: "breaches",
@@ -121,6 +134,15 @@ const T = {
 
     compromisTitre: "What each setting costs",
     compromisQuoi: "Measured over the 400 files. A breach is an uncontrolled onboarding; an avoidable escalation is analyst time spent for nothing.",
+    figAutoTitre: "What the threshold automates, and how right it is",
+    figAutoAria: "Two curves against the threshold: the automated share falls in steps while the accuracy of automatic decisions barely moves.",
+    figEscaladeTitre: "The price of missing nothing",
+    figEscaladeAria: "Curve of needless escalations against the threshold; the tinted zone covers the thresholds where a case slips through.",
+    serAuto: "Automated share", serJuste: "Accuracy of automatic decisions",
+    serEscalades: "Needless escalations",
+    bandeManque: "a case slips through",
+    voirChiffres: "Show every figure",
+    iciRepere: "current threshold",
     colSeuil: "bar", colAuto: "automated", colJuste: "correct",
     colManq: "breaches", colEvit: "avoidable escalations",
     avecRef: "with sector reference", sansRef: "without sector reference",
@@ -178,6 +200,10 @@ let compromis = null;
 let occupe = false;
 
 const pc = (x) => (x * 100).toFixed(1) + " %";
+/* Le groupement des milliers suit la langue de lecture, pas celle du modèle. */
+const langNum = () => (langue === "fr" ? "fr-FR" : "en-GB");
+const nb = (n) => Math.round(n).toLocaleString(langNum());
+const pcCran = (x) => Math.round(x * 100) + " %";
 
 function blocChiffres(c) {
   const L = t();
@@ -265,10 +291,49 @@ function blocCompromis(c) {
     </tr>`;
   }).join("");
 
+  /* La zone où un dossier passe à travers : ce n'est pas un point de la courbe qu'on
+   * choisirait, c'est un réglage disqualifié. Les bornes tombent à mi-chemin des seuils
+   * voisins — rien n'a été mesuré entre les deux. */
+  const bandes = [];
+  jeu.forEach((b, i) => {
+    if (!b.manquements) return;
+    const de = i === 0 ? b.seuil : (jeu[i - 1].seuil + b.seuil) / 2;
+    const a = i === jeu.length - 1 ? b.seuil : (b.seuil + jeu[i + 1].seuil) / 2;
+    const prec = bandes[bandes.length - 1];
+    if (prec && Math.abs(prec.a - de) < 1e-9) prec.a = a;
+    else bandes.push({ de, a, nom: bandes.length ? "" : L.bandeManque });
+  });
+
+  const repere = { x: c.seuil, texte: L.iciRepere };
+  const fmtSeuil = (v) => v.toFixed(2);
+
+  /* Les deux séries sont des pourcentages : elles partagent l'axe, sinon l'écart entre
+   * « un tiers automatisé » et « juste à 96 % » se lirait comme une comparaison. */
+  const figAuto = courbe({
+    points: jeu, x: (b) => b.seuil, marque: repere, bandes, fmtX: fmtSeuil,
+    hauteur: 230, aria: L.figAutoAria,
+    series: [
+      /* Une décimale dans l'info-bulle, aucune sur l'axe : « 100.0 % » sur un cran ne dit
+       * rien de plus que « 100 % » et prend la place du cran voisin. */
+      { cle: (b) => b.tauxAutomatisation, nom: L.serAuto, aire: true, fmt: pc, fmtCran: pcCran },
+      { cle: (b) => b.precisionAutomatisee, nom: L.serJuste, partage: true, ton: "neutre", fmt: pc, fmtCran: pcCran },
+    ],
+  });
+
+  const figEscalade = courbe({
+    points: jeu, x: (b) => b.seuil, marque: repere, bandes, fmtX: fmtSeuil,
+    hauteur: 210, aria: L.figEscaladeAria,
+    series: [{ cle: (b) => b.escaladesInutiles, nom: L.serEscalades, aire: true,
+               ton: "attention", fmt: (v) => nb(v) }],
+  });
+
   $("#compromis").innerHTML = `
     <div class="feuillet">
       <div class="quoi">${esc(L.compromisQuoi)}
         — <em>${esc(c.referentielActif ? L.avecRef : L.sansRef)}</em></div>
+      <div class="titre-fig">${esc(L.figAutoTitre)}</div>${figAuto}
+      <div class="titre-fig">${esc(L.figEscaladeTitre)}</div>${figEscalade}
+      <details><summary>${esc(L.voirChiffres)}</summary>
       <div class="defile">
         <table >
           <thead><tr>
@@ -277,8 +342,9 @@ function blocCompromis(c) {
           </tr></thead>
           <tbody>${lignes}</tbody>
         </table>
-      </div>
+      </div></details>
     </div>`;
+  brancherFigures($("#compromis"));
 }
 
 function blocRegles(regles) {
@@ -297,7 +363,6 @@ function blocRegles(regles) {
 function dossier(l) {
   const L = t();
   const c = l.cas, v = l.verdict;
-  const langNum = langue === "fr" ? "fr-FR" : "en-GB";
   return `
     <div class="feuillet dossier" data-cas="${esc(c.id)}">
       <div class="corps"><div class="entete">
@@ -305,7 +370,7 @@ function dossier(l) {
           <span class="meta"> · ${esc(mot(c.type))} · ${esc(c.paysResidence)}</span></div>
         <div class="meta">${esc(c.id)} · ${esc(L.confiance)} ${v.confiance.toFixed(2)}</div>
       </div>
-      <div class="meta">${esc(mot(c.activite.secteur))} · ${c.activite.volumeAnnuelDeclare.toLocaleString(langNum)} € ${esc(L.declares)} · ${esc(L.opere)} ${esc(c.activite.paysOperation.join(", "))}</div>
+      <div class="meta">${esc(mot(c.activite.secteur))} · ${c.activite.volumeAnnuelDeclare.toLocaleString(langNum())} € ${esc(L.declares)} · ${esc(L.opere)} ${esc(c.activite.paysOperation.join(", "))}</div>
 
       <div class="renvoi attention">${esc(v.escalade
         ? L.sousLeSeuil(v.motifEscalade.confiance, v.motifEscalade.seuil)
@@ -357,7 +422,7 @@ function dessiner() {
             ${accord ? "" : `<div class="meta">${esc(L.proposait)} ${esc(L[r.propose])}</div>`}
           </div></div>`;
       }).join("") +
-      `<div style="margin-top:12px"><button type="button" class="b discret" id="remise">${esc(L.remise)}</button></div>`;
+      `<div style="margin-top:12px"><button type="button" class="b remise" id="remise">${esc(L.remise)}</button></div>`;
 
   brancher();
 }

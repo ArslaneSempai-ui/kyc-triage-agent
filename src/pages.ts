@@ -75,6 +75,7 @@ export function build(): void {
 
   let html = readFileSync(root + "src/ui.html", "utf8");
   html = html.replace('href="/registre.css"', 'href="registre.css"');
+  html = html.replace('from "/graphes.js"', 'from "./graphes.js"');
 
   /* Under the title, not above it: a note about how the demo works, placed before the page
    * has said what it is, reads as a cookie notice and gets skipped exactly like one. */
@@ -85,6 +86,7 @@ export function build(): void {
   writeFileSync(docs + "/index.html", html);
 
   cpSync(root + "src/registre.css", docs + "/registre.css");
+  cpSync(root + "src/graphes.js", docs + "/graphes.js");
   if (existsSync(root + "images")) cpSync(root + "images", docs + "/images", { recursive: true });
   writeFileSync(docs + "/.nojekyll", "");
 
