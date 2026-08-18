@@ -201,7 +201,7 @@ better-looking headline. The agent was more automated because it was looking at 
 
 ## Against doing no work at all
 
-"Handles <!--p:triage.partAutomatisee|pc0-->58 %<!--/p--> without a human" — against what? Two constants bracket the problem, and
+"Handles <!--p:triage.partAutomatisee~pc0-->58 %<!--/p--> without a human" — against what? Two constants bracket the problem, and
 both take a line to implement:
 
 <!-- figures:baselines -->
@@ -403,7 +403,7 @@ synthetic case set a real one.
 What survives is narrower and worth stating exactly: **the discipline is the finding, the
 score is illustration.** That an automated decision should carry a citation, stop where it
 is unsure, and be scored on breaches rather than on accuracy — that holds anywhere. That it
-reaches <!--p:triage.partAutomatisee|pc0-->58 %<!--/p--> automation with no breach holds on my four hundred files.
+reaches <!--p:triage.partAutomatisee~pc0-->58 %<!--/p--> automation with no breach holds on my four hundred files.
 
 ---
 
@@ -460,7 +460,7 @@ its own marking scheme scores 100 % and demonstrates nothing.
 Everything above is measured, and a measurement invites conclusions it does not support.
 The ones this page is most likely to be read as making, and does not:
 
-**Not "<!--p:triage.partAutomatisee|pc0-->58 %<!--/p--> of onboarding can be automated."** <!--p:triage.partAutomatisee|pc0-->58 %<!--/p--> of *these* files, under a rule set I
+**Not "<!--p:triage.partAutomatisee~pc0-->58 %<!--/p--> of onboarding can be automated."** <!--p:triage.partAutomatisee~pc0-->58 %<!--/p--> of *these* files, under a rule set I
 wrote, against a ground truth I also wrote. The number is a property of the generator as
 much as of the agent. What travels is the shape: a well-informed rule beats a well-tuned
 threshold, and the two are not substitutes.
