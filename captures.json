@@ -1,0 +1,46 @@
+{
+  "images": [
+    {
+      "sortie": "images/demo.gif",
+      "type": "gif",
+      "taille": [
+        900,
+        640
+      ],
+      "echelle": 1,
+      "duree": 1100,
+      "fenetre": [
+        900,
+        2200
+      ],
+      "depart": 820,
+      "hauteurUtile": 640,
+      "scenes": [
+        [],
+        [
+          "#seuil=0.45"
+        ],
+        [
+          "#seuil=0.60"
+        ],
+        [
+          "#seuil=0.85"
+        ],
+        [
+          "#ref!"
+        ]
+      ]
+    },
+    {
+      "sortie": "images/queue.png",
+      "type": "png",
+      "taille": [
+        1100,
+        3200
+      ],
+      "echelle": 2,
+      "depart": 1900,
+      "hauteurUtile": 720
+    }
+  ]
+}
