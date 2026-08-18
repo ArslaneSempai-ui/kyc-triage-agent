@@ -8,7 +8,7 @@
         640
       ],
       "echelle": 1,
-      "duree": 1100,
+      "duree": 320,
       "fenetre": [
         900,
         2200
@@ -16,17 +16,50 @@
       "depart": 820,
       "hauteurUtile": 640,
       "scenes": [
-        [],
         [
-          "#seuil=0.45"
+          "#seuil=0.95"
         ],
         [
-          "#seuil=0.60"
+          "#seuil=0.9"
         ],
         [
           "#seuil=0.85"
         ],
         [
+          "#seuil=0.8"
+        ],
+        [
+          "#seuil=0.75"
+        ],
+        [
+          "#seuil=0.7"
+        ],
+        [
+          "#seuil=0.65"
+        ],
+        [
+          "#seuil=0.6"
+        ],
+        [
+          "#seuil=0.55"
+        ],
+        [
+          "#seuil=0.5"
+        ],
+        [
+          "#seuil=0.45"
+        ],
+        [
+          "#seuil=0.4"
+        ],
+        [
+          "#seuil=0.35"
+        ],
+        [
+          "#seuil=0.3"
+        ],
+        [
+          "#seuil=0.3",
           "#ref!"
         ]
       ]
