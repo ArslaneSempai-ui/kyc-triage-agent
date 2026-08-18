@@ -38,6 +38,7 @@ distribution and watch what it moves — and what it never will. The 400 client 
   <p class="renvoi" id="provenanceLegende"></p>
 </main>
 
+<script>window.LOCAL_PRET = new Promise((r) => { window.LOCAL_POSE = r; });</script>
 <script type="module">
 import {
   demarrer, fileDAttente, traitees, reprendre, reglerSeuil, basculerReferentiel, chiffres,
@@ -71,6 +72,10 @@ window.LOCAL = async (chemin, corps) => {
   }
   return {};
 };
+
+/* Le shim est en place : l'écran peut partir. La balise classique qui a créé la promesse
+ * s'exécute avant tout module, donc personne ne peut la manquer. */
+window.LOCAL_POSE && window.LOCAL_POSE();
 </script>
 <script type="module">
 /* L'écran a déjà sa propre fonction `brancher` — celle qui recâble les boutons après un
@@ -87,7 +92,22 @@ const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&":"&amp;","<":
  * with the same shapes. Keeping one file rather than two means the hosted demo cannot
  * drift from the tool — which is the only way a demo stays worth clicking.
  */
+/*
+ * Attendre que le shim soit posé, quand il y en a un.
+ *
+ * Sur l'hôte statique, le shim est un module qui importe six fichiers ; l'écran n'en
+ * importe qu'un. Si un seul de ces six tarde ou échoue, l'écran part avant lui, `api()`
+ * tombe sur `fetch("/api/...")`, GitHub répond sa page 404 en HTML, et le lecteur reçoit
+ * « Unexpected token '<' » avec un écran vide. Vu une fois sur cinq chargements de la
+ * démo du banc, donc invisible pour qui vérifie une seule fois.
+ *
+ * Une balise classique posée avant les modules crée la promesse ; le shim la tient. En
+ * local, `window.LOCAL_PRET` n'existe pas et rien n'attend.
+ */
+const pret = async () => { if (!window.LOCAL && window.LOCAL_PRET) await window.LOCAL_PRET; };
+
 const api = async (chemin, corps) => {
+  await pret();
   if (window.LOCAL) return window.LOCAL(chemin, corps);
   const r = await fetch(chemin, corps ? { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify(corps) } : {});
   return r.json();
