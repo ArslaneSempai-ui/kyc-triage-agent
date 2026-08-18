@@ -341,7 +341,17 @@ test("no hand-typed automation figure on the page disagrees with the measurement
    * So any percentage written next to the word "automation" — or inside the phrase
    * "N % without a human" — is checked against what the code actually produces.
    */
-  const readme = readFileSync(new URL("../README.md", import.meta.url), "utf8");
+  /*
+   * Le texte tel qu'il sera rendu.
+   *
+   * Ces affirmations portent désormais leur marque de provenance — `<!--p:clé-->valeur<!--/p-->`,
+   * invisible sur GitHub, vérifiée par `prose.ts --check` dans le dépôt vitrine. La marque
+   * coupe le nombre du mot qui le suit, donc ce test ne trouvait plus rien à contrôler : il
+   * enlève les commentaires avant de lire. Les deux contrôles se recouvrent volontiers —
+   * celui-ci vit à côté du modèle, l'autre à côté du registre.
+   */
+  const readme = readFileSync(new URL("../README.md", import.meta.url), "utf8")
+    .replace(/<!--(?!\s*figures)[\s\S]*?-->/g, "");
   const measured = mesurer(genererCas(400), 0.7, REFERENTIEL_SECTORIEL).tauxAutomatisation * 100;
 
   const claims = [
