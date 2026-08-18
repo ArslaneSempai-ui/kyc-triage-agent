@@ -172,3 +172,6 @@ export function brancher(racine?: ParentNode): void;
 
 /** Une part écrite en pour-cent, le plein réservé au plein. */
 export function partEcrite(dedans: number, total: number): string;
+
+/** Rendre choisissables les formes qui portent `data-choix`. */
+export function choisir(racine: Element, onChoix: (valeur: string) => void, courant?: unknown): void;
