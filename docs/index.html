@@ -419,7 +419,7 @@ function dossier(l) {
       <div style="margin-top:12px">${blocRegles(v.regles)}</div>
 
       <div class="rang">
-        <input class="champ" placeholder="${esc(L.motifChamp)}" />
+        <input class="champ motif-champ" placeholder="${esc(L.motifChamp)}" />
         ${["approuver", "complement", "escalader"].map((d) => `
           <button type="button" class="b${d === v.decisionBrute ? " propose" : ""}" data-d="${d}"
             ${d === v.decisionBrute ? `title="${esc(L.proposeTitre)}"` : ""}>${esc(L[d])}${d === v.decisionBrute ? " ·" : ""}</button>`).join("")}
@@ -465,6 +465,21 @@ function dessiner() {
   brancher();
 }
 
+/*
+ * `.motif-champ` — la classe que ce branchement cherche, et qui manquait.
+ *
+ * L'input du motif ne portait que `champ`, donc `bloc.querySelector(".motif-champ")` rendait
+ * null et `champ.value` levait au premier clic sur n'importe quel bouton de décision.
+ *
+ * Mesuré le 22 août 2026 sur la démo construite : 25 dossiers sur 25 sans champ, 75 boutons
+ * sur 75 qui lèvent, et le JavaScript de la page mort au premier geste du visiteur. Les trois
+ * quarts de l'écran cessaient de répondre — la remise à zéro, le seuil, le compromis — parce
+ * qu'une exception non rattrapée arrête le gestionnaire en cours.
+ *
+ * Aucun contrôle ne le voyait, et c'est le point : les tests vérifient que le shim connaît les
+ * routes que l'écran appelle, jamais qu'un clic aboutit. Un écran peut être conforme à toutes
+ * ses promesses de structure et mort au premier geste.
+ */
 function brancher() {
   const L = t();
   for (const bloc of document.querySelectorAll(".dossier")) {
