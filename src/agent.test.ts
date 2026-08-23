@@ -1,4 +1,6 @@
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { eprouver } from "./adverses.ts";
 import { INVENTORY, MUST_DECLARE, CITED } from "./inventory.ts";
@@ -363,5 +365,39 @@ test("no hand-typed automation figure on the page disagrees with the measurement
   for (const c of claims) {
     assert.ok(Math.abs(c - measured) < 1,
       `the page claims ${c} % automation; the code measures ${measured.toFixed(1)} %`);
+  }
+});
+
+/*
+ * Le relevé des échecs doit dire ce qu'il ne montre pas.
+ *
+ * « WHAT KIND OF WRONG » n'imprimait que les huit formes les plus fréquentes — 34 décisions
+ * sur 73 au corpus courant. Le lecteur prenait les huit lignes pour la réponse alors que
+ * plus de la moitié des échecs vivaient dans des formes jamais nommées ni comptées. La
+ * section voisine annonce déjà « THREE OF THE 69 » : celle-ci ne disait rien.
+ *
+ * Le témoin porte sur l'arithmétique, pas sur la mise en page : la somme de ce qui est
+ * montré et de ce qui est annoncé comme reste doit faire le total imprimé en tête. Un
+ * relevé qui perd des cas en route échoue ici même s'il a l'air complet.
+ */
+test("le relevé des échecs rend compte de tous les échecs, montrés ou non", () => {
+  const chemin = new URL("./echecs.ts", import.meta.url);
+  const sortie = execFileSync(process.execPath, [fileURLToPath(chemin)], { encoding: "utf8" });
+
+  const total = Number(sortie.match(/^\s*(\d+) wrong decisions out of/m)?.[1]);
+  assert.ok(total >= 1, `aucun échec relevé : ${total} — le contrôle porterait sur rien`);
+
+  const montrees = [...sortie.matchAll(/^\s{2,}(\d+)\s{2}\S/gm)].map((m) => Number(m[1]));
+  assert.ok(montrees.length >= 1, "aucune forme imprimée : le relevé ne montre plus rien");
+  const vues = montrees.reduce((a, b) => a + b, 0);
+
+  const reste = Number(sortie.match(/(\d+) decision\(s\) — not listed above/)?.[1] ?? 0);
+  assert.equal(vues + reste, total,
+    `${vues} montrée(s) + ${reste} annoncée(s) ≠ ${total} au total : des échecs disparaissent du relevé`);
+
+  /* Et zéro manquement se dit en toutes lettres, sinon la meilleure nouvelle de l'outil
+     s'affiche comme un titre suivi d'un blanc. */
+  if (!/^\s+\S/m.test(sortie.split("THE BREACH")[1]?.split("\n").slice(2, 3).join("") ?? "")) {
+    assert.match(sortie, /THE BREACH[^\n]*\n\n\s+\S/, "la section des manquements ne doit jamais être vide sans un mot");
   }
 });

@@ -81,11 +81,35 @@ if (isMain(import.meta)) {
   const echecs = collecter();
   console.log(`\n${echecs.length} wrong decisions out of 400\n`);
 
+  /*
+   * Eight shapes, and what the eight leave out.
+   *
+   * The heading promises "what kind of wrong" and the list showed the eight commonest
+   * shapes — which on the current corpus is 34 of 73 decisions. A reader would take the
+   * printed rows for the answer and conclude the failures are dominated by them, when more
+   * than half sit in shapes that were never named or counted. The wasted-escalation section
+   * below already says "THREE OF THE 69"; this one said nothing.
+   */
   console.log("WHAT KIND OF WRONG\n");
-  for (const [cle, n] of forme(echecs).slice(0, 8)) console.log(`  ${String(n).padStart(4)}  ${cle}`);
+  const formes = forme(echecs);
+  const MONTREES = 8;
+  for (const [cle, n] of formes.slice(0, MONTREES)) console.log(`  ${String(n).padStart(4)}  ${cle}`);
+  const reste = formes.slice(MONTREES);
+  if (reste.length) {
+    const dedans = reste.reduce((s, [, n]) => s + n, 0);
+    console.log(`\n  ${reste.length} further shape(s), ${dedans} decision(s) — not listed above`);
+  }
 
   const manquements = echecs.filter((e) => e.genre === "manquement");
-  console.log(`\n\nTHE BREACH${manquements.length > 1 ? "ES" : ""} — decided alone, should have gone up\n`);
+  /*
+   * Zero breaches is the best result this tool can report, and it was printed as a heading
+   * followed by blank space — which reads as a rendering fault, not as good news. A count
+   * that is zero has to say so in words.
+   */
+  console.log(`\n\nTHE BREACH${manquements.length === 1 ? "" : "ES"} — decided alone, should have gone up\n`);
+  if (manquements.length === 0) {
+    console.log("  none: no file was decided alone that should have gone to a human\n");
+  }
   for (const e of manquements) console.log(decrire(e) + "\n");
 
   const evitables = echecs.filter((e) => e.genre === "escalade evitable");
