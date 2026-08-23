@@ -18,6 +18,7 @@ import { INVENTORY, CITED } from "./inventory.ts";
 import { markdown } from "./provenance.ts";
 import { comparer as comparerBases } from "./bases.ts";
 import { run as emit, table } from "./figures.ts";
+import { fileURLToPath } from "node:url";
 
 const cas = genererCas(400);
 const pc = (x: number) => (x * 100).toFixed(1) + " %";
@@ -204,5 +205,5 @@ const citations = table(
 /* Where every number on this page came from. Generated, and guarded by a test. */
 const provenance = markdown(INVENTORY, table);
 
-emit(new URL("../README.md", import.meta.url).pathname,
+emit(fileURLToPath(new URL("../README.md", import.meta.url)),
   { finding, tradeoff, context, sensitivity, chosen, failures, margin, adversarial, baselines, provenance, citations });

@@ -1,5 +1,5 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, renameSync, copyFileSync } from "node:fs";
 import { dirname } from "node:path";
 import {
   demarrer, fileDAttente, traitees, reprendre, reglerSeuil, basculerReferentiel, chiffres,
@@ -9,6 +9,7 @@ import { balayer, mesurer } from "./mesurer.ts";
 import { lireCas } from "./file.ts";
 import { REFERENTIEL_SECTORIEL } from "./referentiel.ts";
 import type { Decision } from "./cas.ts";
+import { fileURLToPath } from "node:url";
 
 const PORT = Number(process.env.PORT ?? 4500);
 
@@ -35,6 +36,29 @@ function corps(req: IncomingMessage): Promise<Record<string, unknown>> {
   });
 }
 
+/*
+ * A SETTING THAT WAS NOT SENT MUST NOT BE READ AS THE MOST PERMISSIVE ONE.
+ *
+ * `reglerSeuil(Number(seuil))` looks like it validates and does not: the coercion runs
+ * first, and `Number(null)`, `Number("")`, `Number([])` and `Number(false)` are all `0`,
+ * which the clamp then lifts to 0.30 — the bottom of the range. Verified against the
+ * running server: one POST of `{"seuil": null}` and the threshold read back 0.30.
+ *
+ * The direction matters here. 0.30 is the *least* cautious setting this tool offers, so
+ * every spelling of "no value" moved a KYC threshold towards escalating less, silently,
+ * with a 200. `undefined` was the only one handled correctly, by accident — `Number` maps
+ * it to NaN.
+ *
+ * `Boolean(actif)` has the same shape and a sharper edge: `Boolean("false")` is `true`, so
+ * a client sending the *string* "false" — what a form field or a query parameter gives you
+ * — switched the sectoral reference on. Measured the same way.
+ *
+ * JSON has a number type and a boolean type. The screen sends both. Ask for them.
+ */
+const nombre = (x: unknown): number | undefined =>
+  (typeof x === "number" && Number.isFinite(x)) ? x : undefined;
+const booleen = (x: unknown): boolean | undefined => (typeof x === "boolean" ? x : undefined);
+
 const DECISIONS = new Set<Decision>(["approuver", "complement", "escalader"]);
 
 const serveur = createServer(async (req, res) => {
@@ -42,7 +66,7 @@ const serveur = createServer(async (req, res) => {
 
   try {
     if (url.pathname === "/") {
-      const html = readFileSync(new URL("./ui.html", import.meta.url).pathname, "utf8");
+      const html = readFileSync(fileURLToPath(new URL("./ui.html", import.meta.url)), "utf8");
       // The file changes during development: never serve a stale copy.
       res.writeHead(200, {
         "content-type": "text/html; charset=utf-8",
@@ -53,14 +77,14 @@ const serveur = createServer(async (req, res) => {
     }
 
     if (url.pathname === "/graphes.js") {
-      const js = readFileSync(new URL("./graphes.js", import.meta.url).pathname, "utf8");
+      const js = readFileSync(fileURLToPath(new URL("./graphes.js", import.meta.url)), "utf8");
       res.writeHead(200, { "content-type": "text/javascript; charset=utf-8", "cache-control": "no-store" });
       res.end(js);
       return;
     }
 
     if (url.pathname === "/registre.css") {
-      const css = readFileSync(new URL("./registre.css", import.meta.url).pathname, "utf8");
+      const css = readFileSync(fileURLToPath(new URL("./registre.css", import.meta.url)), "utf8");
       res.writeHead(200, { "content-type": "text/css; charset=utf-8", "cache-control": "no-store" });
       res.end(css);
       return;
@@ -74,7 +98,10 @@ const serveur = createServer(async (req, res) => {
       const { cas, decision, motif } = await corps(req);
       const d = String(decision ?? "") as Decision;
       if (!DECISIONS.has(d)) return json(res, { erreur: `Unknown decision: ${decision}` }, 400);
-      reprendre(String(cas ?? ""), d, String(motif ?? ""));
+      /* An id the client made up is the client's mistake, not the server's: 400, not 500. */
+      const id = String(cas ?? "");
+      if (!lireCas().some((c) => c.id === id)) return json(res, { erreur: `Dossier inconnu : ${id}` }, 400);
+      reprendre(id, d, String(motif ?? ""));
       return json(res, { chiffres: chiffres(), file: fileDAttente(), traitees: traitees() });
     }
 
@@ -85,13 +112,17 @@ const serveur = createServer(async (req, res) => {
 
     if (url.pathname === "/api/seuil" && req.method === "POST") {
       const { seuil } = await corps(req);
-      reglerSeuil(Number(seuil));
+      const v = nombre(seuil);
+      if (v === undefined) return json(res, { erreur: `Threshold is not a number: ${JSON.stringify(seuil)}` }, 400);
+      reglerSeuil(v);
       return json(res, { chiffres: chiffres(), file: fileDAttente(), traitees: traitees() });
     }
 
     if (url.pathname === "/api/referentiel" && req.method === "POST") {
       const { actif } = await corps(req);
-      basculerReferentiel(Boolean(actif));
+      const v = booleen(actif);
+      if (v === undefined) return json(res, { erreur: `Not a boolean: ${JSON.stringify(actif)}` }, 400);
+      basculerReferentiel(v);
       return json(res, { chiffres: chiffres(), file: fileDAttente(), traitees: traitees() });
     }
 
@@ -116,10 +147,50 @@ const serveur = createServer(async (req, res) => {
  * Running as a server, the queue is kept on disk so a demonstration survives a restart.
  * The queue module itself knows nothing about that — see `brancherPersistance`.
  */
-const FICHIER = new URL("../data/etat.json", import.meta.url).pathname;
+const FICHIER = fileURLToPath(new URL("../data/etat.json", import.meta.url));
+
+/*
+ * THREE SITUATIONS THAT WERE ALL ANSWERED WITH `null`.
+ *
+ * `try { return readFileSync(…) } catch { return null }` treated "no file yet" — normal on
+ * a first run — the same as "the file is there and I could not read it". The queue then
+ * started empty, and the very next decision called `sauver()`, which overwrote the file.
+ * The operator's recorded human decisions were gone, and nothing was printed at any point.
+ *
+ * Measured on 23 August 2026 on a copy: a state file truncated mid-object started a server
+ * that reported `reprises = 0` and the default threshold, said nothing, and after a single
+ * POST the file on disk was 64 bytes containing `"reprises": []`. The human decision that
+ * had been in it was unrecoverable.
+ *
+ * The tool could produce that input itself. `writeFileSync` truncates and then writes, so
+ * a Ctrl-C in the wrong half-second during a demonstration leaves exactly the file above.
+ * Writing through a temporary name and renaming closes that: `rename` is atomic, so a
+ * reader sees the old file or the new one, never half of either.
+ *
+ * What is left is reported, not swallowed. A file we could not understand is copied aside
+ * before anything else touches it — nothing is deleted, and the copy is named so the
+ * operator can find it.
+ */
 brancherPersistance({
-  lire: () => { try { return readFileSync(FICHIER, "utf8"); } catch { return null; } },
-  ecrire: (contenu) => { mkdirSync(dirname(FICHIER), { recursive: true }); writeFileSync(FICHIER, contenu); },
+  lire: () => {
+    try {
+      return readFileSync(FICHIER, "utf8");
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code === "ENOENT") return null; // first run: nothing saved yet
+      /* Anything else is a problem, and a problem that is about to be overwritten. */
+      const copie = `${FICHIER}.illisible-${Date.now()}`;
+      try { copyFileSync(FICHIER, copie); } catch { /* unreadable in that way too — say so below */ }
+      console.error(`état illisible (${(e as Error).message}) — copie gardée dans ${copie}`);
+      console.error("le serveur repart d'une file vide et écrasera le fichier à la première décision");
+      return null;
+    }
+  },
+  ecrire: (contenu) => {
+    mkdirSync(dirname(FICHIER), { recursive: true });
+    const temporaire = `${FICHIER}.en-cours`;
+    writeFileSync(temporaire, contenu);
+    renameSync(temporaire, FICHIER);
+  },
 });
 
 demarrer(400);

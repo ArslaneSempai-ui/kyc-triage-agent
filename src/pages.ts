@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 /**
  * Build the hosted demo.
  *
@@ -18,7 +19,7 @@
 import { readFileSync, writeFileSync, mkdirSync, cpSync, existsSync } from "node:fs";
 import { isMain } from "./cli.ts";
 
-const root = new URL("..", import.meta.url).pathname;
+const root = fileURLToPath(new URL("..", import.meta.url));
 
 const SHIM = `<script>window.LOCAL_PRET = new Promise((r) => { window.LOCAL_POSE = r; });</script>\n<script type="module">
 import {
