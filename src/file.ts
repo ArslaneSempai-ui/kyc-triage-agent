@@ -42,7 +42,20 @@ type Etat = {
  * memory, which is exactly right for a demo where each visitor gets their own queue and
  * nothing survives the tab.
  */
-export type Persistance = { lire(): string | null; ecrire(contenu: string): void };
+/*
+ * `illisible` is optional and exists because the honest answer to "what did you find?" has
+ * three values, not two. `lire()` returning `null` means *nothing was saved yet*; a string
+ * that will not parse means *something was saved and I cannot read it*, which is a
+ * different situation and the one where starting fresh destroys work. Without a way to say
+ * so, the queue answered both with an empty state and the next `sauver()` overwrote the
+ * file. Whoever plugs the persistence in decides what to do about it — the queue still
+ * knows nothing about filesystems.
+ */
+export type Persistance = {
+  lire(): string | null;
+  ecrire(contenu: string): void;
+  illisible?(raison: string, contenu: string): void;
+};
 
 let persistance: Persistance = { lire: () => null, ecrire: () => {} };
 
@@ -63,10 +76,13 @@ let cas: Cas[] = [];
 
 export function demarrer(combien = 400): void {
   cas = genererCas(combien);
+  const brut = persistance.lire();
+  if (brut === null) { etat = vide(); return; }
   try {
-    const brut = persistance.lire();
-    etat = brut === null ? vide() : { ...vide(), ...JSON.parse(brut) };
-  } catch {
+    etat = { ...vide(), ...JSON.parse(brut) };
+  } catch (e) {
+    /* Saved, and unreadable. Not the same as never saved — say which one it was. */
+    persistance.illisible?.((e as Error).message, brut);
     etat = vide();
   }
 }

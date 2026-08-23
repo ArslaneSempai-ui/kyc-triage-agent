@@ -26,11 +26,17 @@ let etat = vide();
 let cas = [];
 export function demarrer(combien = 400) {
     cas = genererCas(combien);
-    try {
-        const brut = persistance.lire();
-        etat = brut === null ? vide() : { ...vide(), ...JSON.parse(brut) };
+    const brut = persistance.lire();
+    if (brut === null) {
+        etat = vide();
+        return;
     }
-    catch {
+    try {
+        etat = { ...vide(), ...JSON.parse(brut) };
+    }
+    catch (e) {
+        /* Saved, and unreadable. Not the same as never saved — say which one it was. */
+        persistance.illisible?.(e.message, brut);
         etat = vide();
     }
 }

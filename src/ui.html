@@ -128,6 +128,7 @@ const T = {
     nettete: "sharpness", confiance: "confidence", declares: "declared", opere: "operates in",
 
     traiteesTitre: "Recent human decisions",
+    traiteesPartielles: (m, n) => `Recent human decisions — showing ${m} of ${n}`,
     traiteesVide: "No human decision yet.",
     proposait: "the agent proposed:",
     remise: "Clear recorded decisions",
@@ -400,7 +401,11 @@ function dessiner() {
     ? `<div class="vide">${esc(L.fileVide)}</div>`
     : file.map(dossier).join("") + `<div class="meta" style="margin-top:10px">${esc(L.legende)}</div>`;
 
-  $("#titreTraitees").textContent = L.traiteesTitre;
+  /* La file dit « showing 25 of 137 » ; cette liste-ci coupait à vingt sans le dire, alors
+     que le compte total est déjà dans le relevé juste au-dessus. Deux nombres sur le même
+     écran qui ne se répondaient pas. */
+  $("#titreTraitees").textContent = traitees.length < c.reprises
+    ? L.traiteesPartielles(traitees.length, c.reprises) : L.traiteesTitre;
   $("#traitees").innerHTML = traitees.length === 0
     ? `<div class="vide">${esc(L.traiteesVide)}</div>`
     : traitees.map((l) => {

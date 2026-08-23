@@ -171,17 +171,21 @@ const FICHIER = fileURLToPath(new URL("../data/etat.json", import.meta.url));
  * before anything else touches it — nothing is deleted, and the copy is named so the
  * operator can find it.
  */
+/** Keep what we could not read, before anything is written over it. Nothing is deleted. */
+function garderDeCote(raison: string): void {
+  const copie = `${FICHIER}.illisible-${Date.now()}`;
+  try { copyFileSync(FICHIER, copie); } catch { /* not copyable either: the message below is what is left */ }
+  console.error(`état illisible (${raison}) — copie gardée dans ${copie}`);
+  console.error("le serveur repart d'une file vide et écrasera le fichier à la première décision");
+}
+
 brancherPersistance({
   lire: () => {
     try {
       return readFileSync(FICHIER, "utf8");
     } catch (e) {
       if ((e as NodeJS.ErrnoException).code === "ENOENT") return null; // first run: nothing saved yet
-      /* Anything else is a problem, and a problem that is about to be overwritten. */
-      const copie = `${FICHIER}.illisible-${Date.now()}`;
-      try { copyFileSync(FICHIER, copie); } catch { /* unreadable in that way too — say so below */ }
-      console.error(`état illisible (${(e as Error).message}) — copie gardée dans ${copie}`);
-      console.error("le serveur repart d'une file vide et écrasera le fichier à la première décision");
+      garderDeCote((e as Error).message);
       return null;
     }
   },
@@ -191,6 +195,7 @@ brancherPersistance({
     writeFileSync(temporaire, contenu);
     renameSync(temporaire, FICHIER);
   },
+  illisible: (raison) => garderDeCote(raison),
 });
 
 demarrer(400);
