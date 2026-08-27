@@ -15,7 +15,7 @@ every decision, and **hands the file to a human when it isn't confident**.
 npm start          # the review queue, on localhost:4500
 npm run mesurer    # the trade-off table below
 npm run sensibilite # which of my own constants decide anything
-npm test           # types, README figures, and <!--p:portfolio.parDepot.triage-->78<!--/p--> tests
+npm test           # types, README figures, and <!--p:portfolio.parDepot.triage-->80<!--/p--> tests
 ```
 
 Everything runs locally. No API key, no external service, no data leaving the machine.
