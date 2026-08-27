@@ -71,6 +71,71 @@ export function brancherPersistance(p: Persistance): void {
  */
 const vide = (): Etat => ({ seuil: 0.7, referentielActif: true, reprises: [] });
 
+/**
+ * The range the threshold may take, in one place.
+ *
+ * It was written out twice — once in `reglerSeuil`, once nowhere at all, which is how a
+ * value from disk got to sit outside it. A bound copied into two branches asserts that both
+ * branches are asking the same question; here they are, so they read the same pair.
+ */
+export const SEUIL_MIN = 0.3;
+export const SEUIL_MAX = 0.99;
+const borner = (v: number) => Math.min(SEUIL_MAX, Math.max(SEUIL_MIN, v));
+
+/**
+ * A FOURTH SITUATION — AND THE GUARD WAS ON THE OTHER DOOR.
+ *
+ * `demarrer` distinguished three cases: nothing saved, saved and unreadable, saved and
+ * fine. There is a fourth, and it is the quiet one: saved, *parses*, and holds the wrong
+ * types. `{ ...vide(), ...JSON.parse(brut) }` spreads whatever came back over the defaults
+ * without looking at it.
+ *
+ * Measured on this repository, 400 files, before the fix — every one of these was accepted
+ * in silence, with `illisible` never called:
+ *
+ *   {"seuil":"abc"}                → threshold escalation switched OFF entirely: 167 files
+ *                                    still escalate by rule, `parLeSeuil` drops to 0, and
+ *                                    the screen shows a threshold of "abc". Every `c < seuil`
+ *                                    against a non-numeric string is false, so the one
+ *                                    mechanism this tool is about stops running, silently.
+ *   {"seuil":5}                    → outside [0.3, 0.99]; all 400 files escalate.
+ *   {"referentielActif":"false"}   → a truthy string: the reference stays ON while the
+ *                                    saved state says off.
+ *   {"reprises":null}              → throws on every route, 500 across the board.
+ *
+ * The sharp part: the HTTP routes reject all four of these with a 400, and say why — see
+ * the `nombre`/`booleen` block in `serveur.ts`. The same values arriving from disk went
+ * straight in. One door was bolted and the other left open, in the same tool, for the same
+ * four spellings.
+ *
+ * A state we cannot read is a state we cannot read, whichever way it fails to parse. This
+ * routes the wrong-shaped one through `illisible` too, so the operator's file is copied
+ * aside before anything overwrites it — the machinery for that already exists.
+ */
+function reproche(x: unknown): string | null {
+  if (x === null || typeof x !== "object" || Array.isArray(x)) {
+    return `l'état enregistré n'est pas un objet : ${JSON.stringify(x)}`;
+  }
+  const e = x as Record<string, unknown>;
+  if ("seuil" in e && !(typeof e.seuil === "number" && Number.isFinite(e.seuil))) {
+    return `seuil n'est pas un nombre : ${JSON.stringify(e.seuil)}`;
+  }
+  if ("referentielActif" in e && typeof e.referentielActif !== "boolean") {
+    return `referentielActif n'est pas un booléen : ${JSON.stringify(e.referentielActif)}`;
+  }
+  if ("reprises" in e && !Array.isArray(e.reprises)) {
+    return `reprises n'est pas une liste : ${JSON.stringify(e.reprises)}`;
+  }
+  /* An entry that is not an object is read as `undefined` everywhere it is used, except
+     `null`, which throws. Neither is a human decision; both mean the file is not what it
+     claims to be. */
+  if (Array.isArray(e.reprises)) {
+    const i = e.reprises.findIndex((r) => r === null || typeof r !== "object" || Array.isArray(r));
+    if (i !== -1) return `reprises[${i}] n'est pas une décision : ${JSON.stringify(e.reprises[i])}`;
+  }
+  return null;
+}
+
 let etat: Etat = vide();
 let cas: Cas[] = [];
 
@@ -79,7 +144,18 @@ export function demarrer(combien = 400): void {
   const brut = persistance.lire();
   if (brut === null) { etat = vide(); return; }
   try {
-    etat = { ...vide(), ...JSON.parse(brut) };
+    const lu: unknown = JSON.parse(brut);
+    const grief = reproche(lu);
+    if (grief !== null) {
+      /* Parsed, and still not readable. Same answer as unparseable: name it, keep it. */
+      persistance.illisible?.(grief, brut);
+      etat = vide();
+      return;
+    }
+    etat = { ...vide(), ...(lu as Partial<Etat>) };
+    /* A number out of range is a number: it is clamped, exactly as `reglerSeuil` clamps it.
+       What is refused above is a value that is not a number at all. */
+    etat.seuil = borner(etat.seuil);
   } catch (e) {
     /* Saved, and unreadable. Not the same as never saved — say which one it was. */
     persistance.illisible?.((e as Error).message, brut);
@@ -137,7 +213,7 @@ export function reprendre(id: string, retenue: Decision, motif: string): Reprise
 
 export function reglerSeuil(valeur: number): number {
   if (!Number.isFinite(valeur)) return etat.seuil;
-  etat.seuil = Math.min(0.99, Math.max(0.3, valeur));
+  etat.seuil = borner(valeur);
   sauver();
   return etat.seuil;
 }

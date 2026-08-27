@@ -20,7 +20,7 @@ import { mkdtempSync, rmSync, writeFileSync, readFileSync, readdirSync, cpSync, 
 import { tmpdir } from "node:os";
 import { spawn, type ChildProcess } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { brancherPersistance, demarrer, chiffres, reglerSeuil } from "./file.ts";
+import { brancherPersistance, demarrer, chiffres, reglerSeuil, SEUIL_MIN, SEUIL_MAX } from "./file.ts";
 
 const SRC = fileURLToPath(new URL(".", import.meta.url));
 
@@ -39,6 +39,67 @@ test("un état enregistré mais illisible est signalé, pas confondu avec l'abse
   assert.equal(dits.length, 1, "un état illisible doit être signalé une fois");
   assert.match(dits[0]!, /JSON/i, "la raison doit dire ce qui n'allait pas");
   assert.equal(chiffres().reprises, 0, "et la file repart quand même : le serveur reste utilisable");
+});
+
+/*
+ * LA QUATRIÈME SITUATION : enregistré, qui PARSE, et du mauvais type.
+ *
+ * Les trois cas ci-dessus (rien, illisible, bon) laissaient passer celui-là en silence.
+ * Mesuré avant correctif, sur les 400 dossiers : `{"seuil":"abc"}` faisait tomber
+ * `parLeSeuil` à 0 — l'escalade par manque de confiance ne tournait plus du tout, et rien
+ * ne le disait. `{"reprises":null}` levait sur toutes les routes.
+ *
+ * Ce qui rend le trou net : le serveur REFUSE ces quatre écritures avec un 400 quand elles
+ * arrivent par HTTP (voir `nombre`/`booleen` dans serveur.ts). Elles entraient par le
+ * disque. Une couture se traverse : la garde vaut pour les deux portes ou pour aucune.
+ */
+test("un état qui parse mais n'a pas la bonne forme est signalé, pas gobé", () => {
+  const mauvais: [string, RegExp][] = [
+    ['{"seuil":"abc","referentielActif":true,"reprises":[]}', /seuil/],
+    ['{"seuil":"0.55","referentielActif":true,"reprises":[]}', /seuil/],
+    ['{"seuil":0.7,"referentielActif":"false","reprises":[]}', /referentielActif/],
+    ['{"seuil":0.7,"referentielActif":true,"reprises":null}', /reprises/],
+    ['{"seuil":0.7,"referentielActif":true,"reprises":[null]}', /reprises\[0\]/],
+    ['"une chaine"', /objet/],
+    ["[]", /objet/],
+  ];
+  for (const [contenu, raison] of mauvais) {
+    const dits: string[] = [];
+    brancherPersistance({ lire: () => contenu, ecrire: () => {}, illisible: (r) => dits.push(r) });
+    demarrer(20);
+    assert.equal(dits.length, 1, `${contenu} doit être signalé une fois`);
+    assert.match(dits[0]!, raison, `la raison doit nommer le champ fautif : ${contenu}`);
+    /* Et l'outil repart d'un état SAIN — pas d'un seuil qui n'est pas un nombre. */
+    const ch = chiffres();
+    assert.equal(typeof ch.seuil, "number", `${contenu} : le seuil doit rester un nombre`);
+    assert.equal(typeof ch.referentielActif, "boolean", `${contenu} : le drapeau doit rester booléen`);
+  }
+
+  /* Le sens inverse, sans lequel le contrôle ci-dessus passerait en criant à chaque
+     démarrage : une forme correcte ne doit RIEN signaler. */
+  const dits: string[] = [];
+  brancherPersistance({
+    lire: () => '{"seuil":0.62,"referentielActif":false,"reprises":[]}',
+    ecrire: () => {}, illisible: (r) => dits.push(r),
+  });
+  demarrer(20);
+  assert.deepEqual(dits, [], "un état bien formé n'a rien à signaler");
+  assert.equal(chiffres().seuil, 0.62);
+});
+
+/*
+ * UN SEUIL VENU DU DISQUE OBÉIT AUX MÊMES BORNES QUE CELUI VENU DE L'ÉCRAN.
+ *
+ * `reglerSeuil` ramène toute valeur dans [0,3 ; 0,99]. Le chargement ne le faisait pas :
+ * un `{"seuil":5}` enregistré escaladait les 400 dossiers, et un `{"seuil":0}` aurait fait
+ * l'inverse. Un nombre reste un nombre — il est borné, pas refusé.
+ */
+test("un seuil enregistré hors bornes est ramené dans la plage, comme celui de l'écran", () => {
+  for (const [ecrit, attendu] of [[5, SEUIL_MAX], [0, SEUIL_MIN], [-3, SEUIL_MIN], [0.62, 0.62]] as const) {
+    brancherPersistance({ lire: () => `{"seuil":${ecrit},"referentielActif":true,"reprises":[]}`, ecrire: () => {} });
+    demarrer(20);
+    assert.equal(chiffres().seuil, attendu, `seuil enregistré ${ecrit}`);
+  }
 });
 
 test("un état lisible est chargé, sinon le contrôle voisin ne prouve rien", () => {

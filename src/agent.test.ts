@@ -6,7 +6,7 @@ import { eprouver } from "./adverses.ts";
 import { INVENTORY, MUST_DECLARE, CITED } from "./inventory.ts";
 import { ALL } from "./regulations.ts";
 import assert from "node:assert/strict";
-import { genererCas } from "./cas.ts";
+import { genererCas, veriteAttendue } from "./cas.ts";
 import { trier, CONSTANTES } from "./agent.ts";
 import { PLAUSIBLE, materiel } from "./sensibilite.ts";
 import type { Constantes } from "./agent.ts";
@@ -400,4 +400,59 @@ test("le relevé des échecs rend compte de tous les échecs, montrés ou non", 
   if (!/^\s+\S/m.test(sortie.split("THE BREACH")[1]?.split("\n").slice(2, 3).join("") ?? "")) {
     assert.match(sortie, /THE BREACH[^\n]*\n\n\s+\S/, "la section des manquements ne doit jamais être vide sans un mot");
   }
+});
+
+/*
+ * UN SECTEUR HORS RÉFÉRENTIEL NE FAIT PAS TOMBER LA VÉRITÉ TERRAIN.
+ *
+ * `decisionAttendue` gardait son premier test par `secteur &&` puis lisait `secteur!` au
+ * suivant : l'assertion non-nulle portait exactement sur le cas que la ligne précédente
+ * déclarait possible. Tout dossier dont le secteur n'est pas dans `SECTEURS` levait
+ * « Cannot read properties of undefined ».
+ *
+ * Le générateur ne tire ses secteurs que dans cette liste, donc rien ne l'atteignait — mais
+ * l'agent a une règle entière pour ce cas (`R-SECT`) et la galerie adverse un dossier bâti
+ * dessus (`A-SECTEUR-INCONNU`, secteur « casino en ligne »), qui n'échappe au piège que
+ * parce qu'`adverses.ts` écrit sa vérité à la main au lieu de la dériver.
+ *
+ * Les deux sens : la juridiction surveillée est ce qui déclenchait la lecture fautive, donc
+ * elle est présente ici ; et le même dossier avec un secteur CONNU doit, lui, escalader —
+ * sans quoi ce contrôle passerait sur une règle qui ne fait plus rien.
+ */
+test("un secteur absent du référentiel ne fait pas tomber la vérité terrain", () => {
+  const inconnu: Cas = { ...base(), verite: "approuver" };
+  inconnu.activite = { secteur: "casino en ligne", volumeAnnuelDeclare: 1_400_000, paysOperation: ["PA"] };
+  assert.doesNotThrow(() => veriteAttendue(inconnu),
+    "un secteur hors liste ne doit pas lever : il n'y a pas de norme, donc pas de multiple");
+  assert.equal(veriteAttendue(inconnu), "approuver",
+    "sans norme sectorielle, la règle de volume ne peut pas conclure");
+
+  /* Le témoin inverse : même dossier, secteur connu — la règle doit bien mordre, sinon le
+     contrôle ci-dessus vaudrait pour une règle morte. */
+  const connu: Cas = { ...base(), verite: "approuver" };
+  connu.activite = { secteur: "conseil", volumeAnnuelDeclare: 1_400_000, paysOperation: ["PA"] };
+  assert.equal(veriteAttendue(connu), "escalader",
+    "1,4 M€ en conseil vers une juridiction surveillée doit escalader");
+});
+
+/*
+ * UNE DIVISION GARDÉE, SA JUMELLE NE L'ÉTAIT PAS.
+ *
+ * `precisionAutomatisee` traite son dénominateur nul ; `tauxAutomatisation`, une ligne plus
+ * haut, ne le traitait pas — un corpus vide publiait `NaN` là où l'autre publiait un
+ * nombre. Le témoin exige les deux à la fois : garder l'une seule est le défaut d'origine.
+ */
+test("un corpus vide rend des nombres, pas des NaN", () => {
+  const b = mesurer([], 0.7, REFERENTIEL_SECTORIEL);
+  assert.equal(Number.isFinite(b.tauxAutomatisation), true,
+    `tauxAutomatisation vaut ${b.tauxAutomatisation} sur un corpus vide`);
+  assert.equal(Number.isFinite(b.precisionAutomatisee), true,
+    `precisionAutomatisee vaut ${b.precisionAutomatisee} sur un corpus vide`);
+  assert.equal(b.tauxAutomatisation, 0, "rien d'automatisé sur rien vaut 0");
+
+  /* Et le sens qui compte : sur un vrai corpus, ces deux nombres bougent encore. Sans ce
+     témoin, renvoyer 0 en dur passerait le contrôle ci-dessus. */
+  const vrai = mesurer(genererCas(120), 0.7, REFERENTIEL_SECTORIEL);
+  assert.ok(vrai.tauxAutomatisation > 0 && vrai.tauxAutomatisation <= 1,
+    `taux hors plage sur un vrai corpus : ${vrai.tauxAutomatisation}`);
 });
