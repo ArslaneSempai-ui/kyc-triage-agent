@@ -232,7 +232,7 @@ export function traitees(limite = 20): Ligne[] {
 
 export function reprendre(id: string, retenue: Decision, motif: string): Reprise {
   const c = cas.find((x) => x.id === id);
-  if (!c) throw new Error(`Dossier inconnu : ${id}`);
+  if (!c) throw new Error(`Unknown file: ${id}`);
   const v = trier(c, etat.seuil, referentiel());
 
   const reprise: Reprise = {

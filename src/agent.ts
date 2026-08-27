@@ -11,12 +11,24 @@
  * generic ceiling — an ordinary approximation, and a source of measurable errors.
  */
 
-import { PAYS_A_RISQUE, PAYS_SOUS_SURVEILLANCE, piecesRequises } from "./cas.ts";
+import { MONTANTS, PAYS_A_RISQUE, PAYS_SOUS_SURVEILLANCE, piecesRequises } from "./cas.ts";
 import { MULTIPLE_ANORMAL, netteteVolume, PRUDENCE } from "./referentiel.ts";
 import { REGULATIONS } from "./regulations.ts";
 import type { RegulationKey } from "./regulations.ts";
 import type { Referentiel } from "./referentiel.ts";
 import type { Cas, Decision } from "./cas.ts";
+
+/* piege:ok devise-tapee — ce qui reste ici après dérivation de la devise de rendu, ce sont
+   les SEUILS CITÉS des textes de loi appliqués : « $5,000 » de 31 CFR 1020.320(a)(2) et
+   « $10,000 » de 31 CFR 1010.311. Ils reproduisent la clause telle qu'un lecteur peut
+   l'ouvrir, à côté de la référence qui la nomme, et le remède de la règle le prévoit dans
+   ses propres termes : un seuil cité d'un texte de loi s'exempte avec sa raison, il ne se
+   dérive pas — une citation engendrée n'est plus une citation.
+
+   CE QUE CETTE EXEMPTION NE COUVRE PAS, et qui est tenu ailleurs : que ces clauses restent
+   d'accord avec `regulations.ts`, qui porte la même citation avec sa source et sa date de
+   relevé. L'exemption ferme un signal ; elle ne doit pas fermer la question. La garde est
+   dans `agent.test.ts` — « les seuils cités dans les clauses sont ceux du registre ». */
 
 /** Un texte dans les deux langues. Le moteur ne produit pas d'affichage : il produit
  *  both versions, and the screen picks. A sentence built server-side in a single language
@@ -326,8 +338,8 @@ function appliquer(c: Cas, referentiel?: Referentiel, k: Constantes = CONSTANTES
         code: "R-VOL", regulation: "currencyReport",
         clause: { fr: "31 CFR 1010.311 — les opérations en espèces au-delà de 10 000 $ sont déclarées",
                   en: "31 CFR 1010.311 — currency transactions above $10,000 are reported" },
-        constat: { fr: `Volume annuel déclaré : ${volume.toLocaleString("fr-FR")} €`,
-                   en: `Declared annual volume: €${volume.toLocaleString("en-GB")}` },
+        constat: { fr: `Volume annuel déclaré : ${volume.toLocaleString("fr-FR")} ${MONTANTS.symbole}`,
+                   en: `Declared annual volume: ${MONTANTS.symbole}${volume.toLocaleString("en-GB")}` },
         impose: "escalader", nettete: 0.35,
       });
     }
@@ -338,8 +350,8 @@ function appliquer(c: Cas, referentiel?: Referentiel, k: Constantes = CONSTANTES
         code: "R-VOL", regulation: "currencyReport",
         clause: { fr: "31 CFR 1010.311 — les opérations en espèces au-delà de 10 000 $ sont déclarées",
                   en: "31 CFR 1010.311 — currency transactions above $10,000 are reported" },
-        constat: { fr: `${volume.toLocaleString("fr-FR")} € déclarés, soit ${rapport.toFixed(1)}× l'usage du secteur « ${c.activite.secteur} »`,
-                   en: `€${volume.toLocaleString("en-GB")} declared, ${rapport.toFixed(1)}× the norm for “${c.activite.secteur}”` },
+        constat: { fr: `${volume.toLocaleString("fr-FR")} ${MONTANTS.symbole} déclarés, soit ${rapport.toFixed(1)}× l'usage du secteur « ${c.activite.secteur} »`,
+                   en: `${MONTANTS.symbole}${volume.toLocaleString("en-GB")} declared, ${rapport.toFixed(1)}× the norm for “${c.activite.secteur}”` },
         impose: "escalader", nettete: netteteVolume(rapport, k.multipleAnormal),
       });
     }

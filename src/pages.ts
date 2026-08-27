@@ -54,7 +54,7 @@ window.LOCAL = async (chemin, corps) => {
     const d = decisionRecue(corps.decision);
     if (d === undefined) return { erreur: "Unknown decision: " + JSON.stringify(corps.decision) };
     const id = String(corps.cas ?? "");
-    if (!lireCas().some((c) => c.id === id)) return { erreur: "Dossier inconnu : " + id };
+    if (!lireCas().some((c) => c.id === id)) return { erreur: "Unknown file: " + id };
     reprendre(id, d, String(corps.motif ?? ""));
     return etat();
   }

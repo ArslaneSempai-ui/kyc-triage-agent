@@ -201,8 +201,8 @@ better-looking headline. The agent was more automated because it was looking at 
 
 ## Against doing no work at all
 
-"Handles <!--p:triage.partAutomatisee~pc0-->58 %<!--/p--> without a human" — against what? Two constants bracket the problem, and
-both take a line to implement:
+"Handles <!--p:triage.partAutomatisee~pc0-->58 %<!--/p--> without a human" — against what? Escalate everything, or approve
+everything: both take a line to implement, and they bracket the problem.
 
 <!-- figures:baselines -->
 |  | Automated | Breaches | Files to a human |
@@ -223,9 +223,9 @@ Publishing an accuracy without its baseline invites the one question you cannot 
 
 ## Which of my own numbers decide the outcome
 
-Five constants in this repository have no authority behind them. No regulation says where
+The constants swept below have no authority behind them. No regulation says where
 a screening match becomes certain, what multiple of a sector norm is abnormal, or how much
-margin to take against a reference table known to be approximate. I chose all five by
+margin to take against a reference table known to be approximate. I chose every one of them by
 judgement, and a portfolio piece that publishes results without saying which judgements
 they rest on is asking to be taken on trust.
 
@@ -258,10 +258,10 @@ Measured over 5 independent draws of 800 files. What no source says about each o
 Two things about the method, both of which I got wrong first.
 
 **One draw cannot tell a threshold from a coincidence.** The first version swept a single
-sample and reported four of five constants as decisive — every one of them on a move from
-0 breaches to 1 in 1,200 files. A different seed puts that edge somewhere else. Five
+sample and reported all but one of them as decisive — every one on a move from
+no breach to a single one in 1,200 files. A different seed puts that edge somewhere else. Five
 independent draws, and the question splits in two: *does it cost?* and *where does it start
-costing?* Three constants answer yes and don't know, which is awkward and true.
+costing?* The ones that cost breaches answer yes and don't know, which is awkward and true.
 
 **Inert is not the same as irrelevant.** `volumeEleve` came back "no effect" because the
 check meant to run it without a sector reference passed `undefined` to a parameter whose
@@ -489,8 +489,8 @@ inherits the shape of a case set I invented. A hundred real files, anonymised an
 published, would have grounded the whole thing — and I would have found out early whether
 the sector-volume rule is the lever it appears to be, rather than at the end.
 
-**Write the sweep before the tuning, not after.** I picked five constants by judgement,
-built the tool, and swept them last. The sweep then told me four of them cannot be
+**Write the sweep before the tuning, not after.** I picked the constants by judgement,
+built the tool, and swept them last. The sweep then told me not one of them can be
 defended by this measurement. Had it come first, I would have designed the case set to
 resolve them instead of discovering it could not.
 

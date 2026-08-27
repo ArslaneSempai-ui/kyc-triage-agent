@@ -100,7 +100,7 @@ const serveur = createServer(async (req, res) => {
       if (!DECISIONS.has(d)) return json(res, { erreur: `Unknown decision: ${decision}` }, 400);
       /* An id the client made up is the client's mistake, not the server's: 400, not 500. */
       const id = String(cas ?? "");
-      if (!lireCas().some((c) => c.id === id)) return json(res, { erreur: `Dossier inconnu : ${id}` }, 400);
+      if (!lireCas().some((c) => c.id === id)) return json(res, { erreur: `Unknown file: ${id}` }, 400);
       reprendre(id, d, String(motif ?? ""));
       return json(res, { chiffres: chiffres(), file: fileDAttente(), traitees: traitees() });
     }
@@ -175,8 +175,8 @@ const FICHIER = fileURLToPath(new URL("../data/etat.json", import.meta.url));
 function garderDeCote(raison: string): void {
   const copie = `${FICHIER}.illisible-${Date.now()}`;
   try { copyFileSync(FICHIER, copie); } catch { /* not copyable either: the message below is what is left */ }
-  console.error(`état illisible (${raison}) — copie gardée dans ${copie}`);
-  console.error("le serveur repart d'une file vide et écrasera le fichier à la première décision");
+  console.error(`unreadable state (${raison}) — a copy has been kept at ${copie}`);
+  console.error("the server restarts from an empty queue and will overwrite the file on the first decision");
 }
 
 brancherPersistance({

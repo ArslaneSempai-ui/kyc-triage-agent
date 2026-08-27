@@ -10,7 +10,7 @@
  * now nobody could see what the agent missed about it.
  */
 
-import { genererCas } from "./cas.ts";
+import { genererCas, MONTANTS } from "./cas.ts";
 import { isMain } from "./cli.ts";
 import { trier } from "./agent.ts";
 import { REFERENTIEL_SECTORIEL } from "./referentiel.ts";
@@ -65,7 +65,7 @@ export function decrire(e: Echec, langue: "fr" | "en" = "en"): string {
   const c = e.cas;
   const lignes = [
     `${c.id} · ${c.nom} · ${c.type} · ${c.paysResidence}`,
-    `  sector      ${c.activite.secteur}, ${c.activite.volumeAnnuelDeclare.toLocaleString("en-GB")} EUR declared`,
+    `  sector      ${c.activite.secteur}, ${c.activite.volumeAnnuelDeclare.toLocaleString("en-GB")} ${MONTANTS.code} declared`,
     `  screening   sanctions ${c.criblage.correspondanceSanction.toFixed(2)} · PEP ${c.criblage.correspondancePep.toFixed(2)}`,
     `  agent said  ${e.verdict.decision} (confidence ${e.verdict.confiance.toFixed(2)})`,
     `  should be   ${e.attendu}`,

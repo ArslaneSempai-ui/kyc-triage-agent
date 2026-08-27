@@ -151,6 +151,34 @@ test("every rule cites a real regulation or declares itself an internal control"
         assert.ok(REGULATIONS[r.regulation], `${r.code} names a regulation that does not exist`);
         assert.ok(r.clause[langue].includes(REGULATIONS[r.regulation].cite),
           `${r.code} claims ${r.regulation} but its clause does not carry the citation`);
+        /*
+         * AND THE THRESHOLD, NOT ONLY THE REFERENCE.
+         *
+         * The clause spells out the figure — "$5,000", "$10,000" — because a citation whose
+         * amount is computed from our own table has stopped citing the law and started
+         * citing us. That is why devise-tapee is exempted on agent.ts, and an exemption
+         * closes a signal, not the question underneath it: nothing tied these amounts to
+         * the register that holds their source and retrieval date, so the two could drift
+         * apart in silence and the decision would cite a threshold no longer in the law.
+         *
+         * The figure carries a currency and a thousands separator ("$5,000"), and the
+         * French clause writes the same amount its own way ("5 000 $"). Comparing digits
+         * only is what survives both.
+         */
+        /* Toutes les entrées ne portent pas de `figure` — une clause de confidentialité
+           n'a pas de seuil. `in` plutôt qu'un accès direct : le registre est typé littéral. */
+        const reg = REGULATIONS[r.regulation];
+        const fig = "figure" in reg ? String(reg.figure) : "";
+        /* Les montants seulement — ceux que l'exemption couvre. Une figure comme
+           "30 days, 60 maximum" n'est pas recopiée chiffre pour chiffre dans la clause,
+           et l'exiger ferait tomber la garde sur un cas qu'elle ne juge pas. */
+        if (/^[$€£]/.test(fig)) {
+          const attendu = fig.replace(/\D/g, "");
+          assert.ok(r.clause[langue].replace(/\D/g, "").includes(attendu),
+            `${r.code} cites ${REGULATIONS[r.regulation].cite} but its ${langue} clause does not `
+            + `carry the threshold the register holds (${fig}) — one of the two has drifted, `
+            + `and the clause is the copy`);
+        }
       }
     }
   }

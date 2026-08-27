@@ -41,9 +41,30 @@ export type Cas = {
     correspondancePep: number;
   };
   activite: { secteur: string; volumeAnnuelDeclare: number; paysOperation: string[] };
+  /*
+   * L'UNITÉ DE `volumeAnnuelDeclare`, DÉCLARÉE UNE FOIS, À CÔTÉ DU CHAMP QU'ELLE QUALIFIE.
+   *
+   * Le champ est un nombre nu ; sa devise vivait tapée à la main sur cinq sites de rendu —
+   * quatre « € » dans les constats de l'agent et un « EUR » dans la lecture d'un échec.
+   * Cinq copies d'une même affirmation ne valent pas cinq fois plus sûr : ce sont cinq
+   * occasions de diverger, et c'est déjà arrivé dans un dépôt voisin, où le même chiffre
+   * sortait en dollars dans le README et en euros dans une autre commande.
+   *
+   * Les seuils réglementaires, eux, ne se lisent PAS ici : ils sont en dollars, ils sont
+   * cités d'un texte de loi, et ils vivent dans `regulations.ts` avec leur source et leur
+   * date de relevé. Une devise de rendu et un seuil cité ne sont pas la même chose.
+   */
   /** What an experienced analyst would have decided. Used only to score the agent. */
   verite: Decision;
 };
+
+/* piege:ok devise-tapee — c'est ICI que la devise est déclarée, et c'est précisément le
+   remède de la règle : « lire la devise dans la table qui déclare les unités des montants ».
+   Une table déclarante contient forcément le symbole qu'elle déclare ; la signaler
+   reviendrait à interdire le seul endroit où il a le droit d'être écrit. Ce que la règle
+   traque, ce sont les COPIES de cette affirmation dans les sites de rendu — il n'y en a plus. */
+/** The unit every `volumeAnnuelDeclare` is expressed in. Rendering reads it here. */
+export const MONTANTS = { symbole: "€", code: "EUR" } as const;
 
 const PAYS_RISQUE = new Set(["IR", "KP", "SY", "MM", "AF"]);
 const PAYS_SURVEILLES = new Set(["PA", "AE", "KY", "VG", "SC"]);
