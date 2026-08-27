@@ -1,7 +1,7 @@
 /**
  * What the agent is worth compared to doing no work at all.
  *
- * "Handles 63 % without a human" — against what? Two constants bracket the problem and
+ * "Handles 58 % without a human" — against what? Two constants bracket the problem and
  * both are trivial to implement, which is exactly why the comparison is the first thing
  * anyone technical asks for:
  *

@@ -1,7 +1,7 @@
 /**
  * What a percentage is worth compared to doing nothing.
  *
- * "The agent handles 63 % without a human" — against what? "The keyword classifier scores
+ * "The agent handles 58 % without a human" — against what? "The keyword classifier scores
  * 24.2 %" — is that bad? Neither number can be read without knowing what a system that
  * does no work at all would score, and none of these tools ever said.
  *

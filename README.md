@@ -266,7 +266,7 @@ costing?* The ones that cost breaches answer yes and don't know, which is awkwar
 **Inert is not the same as irrelevant.** `volumeEleve` came back "no effect" because the
 check meant to run it without a sector reference passed `undefined` to a parameter whose
 default *was* the reference — so every dormancy check silently ran with the table. Removing
-the table moves that constant from none to more than twenty breaches per 800 files, the
+the table moves that constant from none to nearly twenty breaches per 800 files, the
 figure marked † above. The tool was telling a
 reader to ignore the one number they would need the moment their reference data had a hole
 in it. It is `sensibilite.ts` and a test that guard it now.

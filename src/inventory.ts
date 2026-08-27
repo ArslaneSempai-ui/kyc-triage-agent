@@ -14,7 +14,7 @@
  * What survives is narrower and worth stating exactly: **the discipline is the finding,
  * the score is illustration.** That an automated decision should carry a citation, stop
  * where it is unsure, and be scored on breaches rather than on accuracy — that holds
- * anywhere. That it reaches 63 % automation with no breach holds on my four hundred files.
+ * anywhere. That it reaches 58 % automation with no breach holds on my four hundred files.
  *
  * The inventory is checked by a test against the structures it describes, so it cannot
  * quietly fall behind the code.

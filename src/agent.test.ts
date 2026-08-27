@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { eprouver } from "./adverses.ts";
 import { INVENTORY, MUST_DECLARE, CITED } from "./inventory.ts";
 import { ALL } from "./regulations.ts";
@@ -380,19 +380,49 @@ test("no hand-typed automation figure on the page disagrees with the measurement
    * enlève les commentaires avant de lire. Les deux contrôles se recouvrent volontiers —
    * celui-ci vit à côté du modèle, l'autre à côté du registre.
    */
-  const readme = readFileSync(new URL("../README.md", import.meta.url), "utf8")
-    .replace(/<!--(?!\s*figures)[\s\S]*?-->/g, "");
+  /*
+   * ET LA MÊME AFFIRMATION VIT DANS LA SOURCE, PAS SEULEMENT DANS LA PAGE.
+   *
+   * Cette garde ne lisait que `README.md`. Elle a donc tenu la page à jour pendant que
+   * `inventory.ts`, `bases.ts` et `baselines.ts` annonçaient encore 63 % dans leur en-tête
+   * — la phrase même que le README rend, recopiée à côté du modèle. Trois sentinelles
+   * muettes, et le commentaire de cette garde raconte pourtant l'incident qu'elles
+   * reproduisaient.
+   *
+   * Le défaut n'était pas dans le motif, il était dans CE QUE LA GARDE BALAYAIT : une
+   * couverture récitée — un fichier — là où la revendication vit dans plusieurs. On balaie
+   * donc la page ET la source, et chaque trouvaille dit d'où elle vient.
+   */
+  const RACINE = fileURLToPath(new URL("..", import.meta.url));
+  const SRC = fileURLToPath(new URL(".", import.meta.url));
+  const textes: { ou: string; texte: string }[] = [
+    { ou: "README.md",
+      texte: readFileSync(RACINE + "README.md", "utf8").replace(/<!--(?!\s*figures)[\s\S]*?-->/g, "") },
+  ];
+  for (const nom of readdirSync(SRC)) {
+    /* Ce fichier porte les chiffres qu'il éprouve : les compter serait s'accuser soi-même. */
+    if (nom === "agent.test.ts" || !/\.(ts|mjs)$/.test(nom)) continue;
+    textes.push({ ou: nom, texte: readFileSync(SRC + nom, "utf8") });
+  }
+
   const measured = mesurer(genererCas(400), 0.7, REFERENTIEL_SECTORIEL).tauxAutomatisation * 100;
 
-  const claims = [
-    ...readme.matchAll(/(\d{1,3}(?:\.\d)?)\s*%\s*(?:of these files|automation|without a human)/gi),
-    ...readme.matchAll(/"Handles\s+(\d{1,3}(?:\.\d)?)\s*%/gi),
-  ].map((m) => Number(m[1]));
+  const claims: { ou: string; valeur: number }[] = [];
+  for (const { ou, texte } of textes) {
+    for (const m of [
+      ...texte.matchAll(/(\d{1,3}(?:\.\d)?)\s*%\s*(?:of these files|automation|without a human)/gi),
+      ...texte.matchAll(/"(?:The agent h|H)andles\s+(\d{1,3}(?:\.\d)?)\s*%/gi),
+    ]) claims.push({ ou, valeur: Number(m[1]) });
+  }
 
   assert.ok(claims.length > 0, "the guard matched nothing — it is guarding nothing");
+  /* Et il doit en trouver AILLEURS que dans le README, sinon l'élargissement ci-dessus est
+     décoratif et la garde retomberait au silence qui a laissé passer les trois en-têtes. */
+  assert.ok(claims.some((c) => c.ou !== "README.md"),
+    "the guard no longer sees the claim in the source files — it is back to watching one file");
   for (const c of claims) {
-    assert.ok(Math.abs(c - measured) < 1,
-      `the page claims ${c} % automation; the code measures ${measured.toFixed(1)} %`);
+    assert.ok(Math.abs(c.valeur - measured) < 1,
+      `${c.ou} claims ${c.valeur} % automation; the code measures ${measured.toFixed(1)} %`);
   }
 });
 
