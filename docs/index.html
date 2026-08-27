@@ -43,6 +43,7 @@ distribution and watch what it moves — and what it never will. The 400 client 
 import {
   demarrer, fileDAttente, traitees, reprendre, reglerSeuil, basculerReferentiel, chiffres,
   reinitialiser, lireCas,
+  nombreRecu, booleenRecu, decisionRecue,
 } from "./js/file.js";
 import { balayer, mesurer } from "./js/mesurer.js";
 import { REFERENTIEL_SECTORIEL } from "./js/referentiel.js";
@@ -54,13 +55,30 @@ const etat = () => ({ chiffres: chiffres(), file: fileDAttente(), traitees: trai
 window.LOCAL = async (chemin, corps) => {
   if (chemin === "/api/etat") return etat();
 
+  /* Les mêmes refus que le serveur, par les mêmes fonctions — pas une deuxième écriture
+     de la même règle. L'écran sait déjà afficher un { erreur }.
+     Ni accent grave ni ${} ici : ce bloc vit dans un gabarit. */
   if (chemin === "/api/reprendre") {
-    reprendre(String(corps.cas ?? ""), corps.decision, String(corps.motif ?? ""));
+    const d = decisionRecue(corps.decision);
+    if (d === undefined) return { erreur: "Unknown decision: " + JSON.stringify(corps.decision) };
+    const id = String(corps.cas ?? "");
+    if (!lireCas().some((c) => c.id === id)) return { erreur: "Dossier inconnu : " + id };
+    reprendre(id, d, String(corps.motif ?? ""));
     return etat();
   }
   if (chemin === "/api/reinitialiser") { reinitialiser(); return etat(); }
-  if (chemin === "/api/seuil") { reglerSeuil(Number(corps.seuil)); return etat(); }
-  if (chemin === "/api/referentiel") { basculerReferentiel(Boolean(corps.actif)); return etat(); }
+  if (chemin === "/api/seuil") {
+    const v = nombreRecu(corps.seuil);
+    if (v === undefined) return { erreur: "Threshold is not a number: " + JSON.stringify(corps.seuil) };
+    reglerSeuil(v);
+    return etat();
+  }
+  if (chemin === "/api/referentiel") {
+    const v = booleenRecu(corps.actif);
+    if (v === undefined) return { erreur: "Not a boolean: " + JSON.stringify(corps.actif) };
+    basculerReferentiel(v);
+    return etat();
+  }
 
   if (chemin === "/api/compromis") {
     const cas = lireCas();

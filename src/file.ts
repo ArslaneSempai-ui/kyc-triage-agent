@@ -64,6 +64,39 @@ export function brancherPersistance(p: Persistance): void {
 }
 
 /**
+ * WHAT A SETTING MUST LOOK LIKE — ONCE, FOR EVERY DOOR THAT LETS ONE IN.
+ *
+ * `serveur.ts` carries a long note about why `reglerSeuil(Number(seuil))` validates nothing:
+ * the coercion runs first, and `Number(null)`, `Number("")`, `Number([])` and `Number(false)`
+ * are all `0`, which the clamp then lifts to the *bottom* of the range — the least cautious
+ * setting the tool offers, reached by every spelling of "no value", silently, with a success.
+ * `Boolean("false")` is `true`, so the string a form field gives you switches the reference on.
+ *
+ * That note describes a fix that was applied to exactly one of the three doors. The browser
+ * shim in `pages.ts` — which is what a visitor to the hosted demo actually runs — still had
+ * `reglerSeuil(Number(corps.seuil))` and `basculerReferentiel(Boolean(corps.actif))`, and no
+ * check at all on the decision or the file id that the server answers with a 400. The saved
+ * state on disk was a third door, closed just above.
+ *
+ * A guard written out once per door is a guard that will be fixed once per door. These live
+ * here because `file.ts` is the one module all three already import — the server, the shim
+ * (`tsconfig.web.json` compiles this file to `docs/js/file.js`), and the queue itself.
+ *
+ * They answer `undefined` rather than a default. A validator with a fallback is the same
+ * defect wearing a different hat: it still turns "no value" into a value.
+ */
+export const nombreRecu = (x: unknown): number | undefined =>
+  (typeof x === "number" && Number.isFinite(x)) ? x : undefined;
+
+export const booleenRecu = (x: unknown): boolean | undefined =>
+  (typeof x === "boolean" ? x : undefined);
+
+export const DECISIONS: ReadonlySet<Decision> = new Set<Decision>(["approuver", "complement", "escalader"]);
+
+export const decisionRecue = (x: unknown): Decision | undefined =>
+  (typeof x === "string" && DECISIONS.has(x as Decision)) ? (x as Decision) : undefined;
+
+/**
  * Une fonction, pas une constante.
  *
  * A shared object gets modified by the first caller and the next one inherits the damage.

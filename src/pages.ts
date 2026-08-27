@@ -21,10 +21,21 @@ import { isMain } from "./cli.ts";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 
-const SHIM = `<script>window.LOCAL_PRET = new Promise((r) => { window.LOCAL_POSE = r; });</script>\n<script type="module">
+/**
+ * Exported so a test can RUN it rather than read it.
+ *
+ * The shim answers the same routes as `serveur.ts` and used to answer them with different
+ * rules: `Number(corps.seuil)` where the server asks for a number, `Boolean(corps.actif)`
+ * where the server asks for a boolean, and nothing at all where the server checks the
+ * decision and the file id. It is the copy a visitor actually runs, and it was the one no
+ * test executed — the shared demo cases check which routes exist and which fields come back,
+ * which is a different question from what each route refuses.
+ */
+export const SHIM = `<script>window.LOCAL_PRET = new Promise((r) => { window.LOCAL_POSE = r; });</script>\n<script type="module">
 import {
   demarrer, fileDAttente, traitees, reprendre, reglerSeuil, basculerReferentiel, chiffres,
   reinitialiser, lireCas,
+  nombreRecu, booleenRecu, decisionRecue,
 } from "./js/file.js";
 import { balayer, mesurer } from "./js/mesurer.js";
 import { REFERENTIEL_SECTORIEL } from "./js/referentiel.js";
@@ -36,13 +47,30 @@ const etat = () => ({ chiffres: chiffres(), file: fileDAttente(), traitees: trai
 window.LOCAL = async (chemin, corps) => {
   if (chemin === "/api/etat") return etat();
 
+  /* Les mêmes refus que le serveur, par les mêmes fonctions — pas une deuxième écriture
+     de la même règle. L'écran sait déjà afficher un { erreur }.
+     Ni accent grave ni \${} ici : ce bloc vit dans un gabarit. */
   if (chemin === "/api/reprendre") {
-    reprendre(String(corps.cas ?? ""), corps.decision, String(corps.motif ?? ""));
+    const d = decisionRecue(corps.decision);
+    if (d === undefined) return { erreur: "Unknown decision: " + JSON.stringify(corps.decision) };
+    const id = String(corps.cas ?? "");
+    if (!lireCas().some((c) => c.id === id)) return { erreur: "Dossier inconnu : " + id };
+    reprendre(id, d, String(corps.motif ?? ""));
     return etat();
   }
   if (chemin === "/api/reinitialiser") { reinitialiser(); return etat(); }
-  if (chemin === "/api/seuil") { reglerSeuil(Number(corps.seuil)); return etat(); }
-  if (chemin === "/api/referentiel") { basculerReferentiel(Boolean(corps.actif)); return etat(); }
+  if (chemin === "/api/seuil") {
+    const v = nombreRecu(corps.seuil);
+    if (v === undefined) return { erreur: "Threshold is not a number: " + JSON.stringify(corps.seuil) };
+    reglerSeuil(v);
+    return etat();
+  }
+  if (chemin === "/api/referentiel") {
+    const v = booleenRecu(corps.actif);
+    if (v === undefined) return { erreur: "Not a boolean: " + JSON.stringify(corps.actif) };
+    basculerReferentiel(v);
+    return etat();
+  }
 
   if (chemin === "/api/compromis") {
     const cas = lireCas();

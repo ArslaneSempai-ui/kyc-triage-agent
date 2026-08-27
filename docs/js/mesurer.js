@@ -40,7 +40,11 @@ export function mesurer(cas, seuil, referentiel, k = CONSTANTES) {
     }
     return {
         seuil, total: cas.length, automatises,
-        tauxAutomatisation: automatises / cas.length,
+        /* The neighbour below already guards its denominator; this one did not, and an empty
+           case list published `NaN %` rather than refusing to answer. Two divisions, one line
+           apart, asking the same question — they get the same guard. Nothing automated out of
+           nothing is 0, not "not a number". */
+        tauxAutomatisation: cas.length === 0 ? 0 : automatises / cas.length,
         justesAutomatises,
         precisionAutomatisee: automatises === 0 ? 1 : justesAutomatises / automatises,
         manquements, escaladesInutiles, parDecision,

@@ -4,6 +4,7 @@ import { dirname } from "node:path";
 import {
   demarrer, fileDAttente, traitees, reprendre, reglerSeuil, basculerReferentiel, chiffres,
   reinitialiser, brancherPersistance,
+  nombreRecu as nombre, booleenRecu as booleen, DECISIONS,
 } from "./file.ts";
 import { balayer, mesurer } from "./mesurer.ts";
 import { lireCas } from "./file.ts";
@@ -54,12 +55,11 @@ function corps(req: IncomingMessage): Promise<Record<string, unknown>> {
  * — switched the sectoral reference on. Measured the same way.
  *
  * JSON has a number type and a boolean type. The screen sends both. Ask for them.
+ *
+ * The checks themselves moved into `file.ts` — this route was the only door that had them,
+ * and the hosted shim and the saved-state loader each let the same four values straight in.
+ * A guard written out once per door gets fixed once per door.
  */
-const nombre = (x: unknown): number | undefined =>
-  (typeof x === "number" && Number.isFinite(x)) ? x : undefined;
-const booleen = (x: unknown): boolean | undefined => (typeof x === "boolean" ? x : undefined);
-
-const DECISIONS = new Set<Decision>(["approuver", "complement", "escalader"]);
 
 const serveur = createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);

@@ -77,8 +77,27 @@ function decisionAttendue(c) {
         if (c.beneficiaires.some((b) => b.part >= 25 && !b.identifie))
             return "complement";
     }
+    /*
+     * The second test used `secteur!` — a non-null assertion on the very value the line above
+     * it admits may be absent. The `&&` on the first test is the author saying "this can be
+     * undefined"; the `!` on the second is the same author telling the compiler it cannot.
+     * One of the two is wrong, and it is the one that throws: any file whose sector is not in
+     * `SECTEURS` crashes here with `Cannot read properties of undefined`.
+     *
+     * Nothing reaches it today — the generator only ever draws a sector from this list — so
+     * this is a trap rather than a failure. It is a baited one: the agent has a whole rule for
+     * the sector-not-in-the-table case (`R-SECT`), the adversarial gallery has a case built on
+     * it (`A-SECTEUR-INCONNU`, sector "casino en ligne"), and that case only escapes because
+     * `adverses.ts` writes its ground truth by hand instead of deriving it. The first person to
+     * derive it gets the crash.
+     *
+     * Without a sector norm there is nothing to be a multiple of, so the rule cannot fire —
+     * which is the same answer the line above already gives.
+     */
     const secteur = SECTEURS.find((s) => s.nom === c.activite.secteur);
-    if (secteur && c.activite.volumeAnnuelDeclare > secteur.volumeTypique * 4)
+    if (secteur === undefined)
+        return "approuver";
+    if (c.activite.volumeAnnuelDeclare > secteur.volumeTypique * 4)
         return "escalader";
     if (c.activite.paysOperation.some((p) => PAYS_SURVEILLES.has(p)) &&
         c.activite.volumeAnnuelDeclare > secteur.volumeTypique * 2)
@@ -147,3 +166,6 @@ export const PAYS_A_RISQUE = PAYS_RISQUE;
 export const PAYS_SOUS_SURVEILLANCE = PAYS_SURVEILLES;
 export const SECTEURS_CONNUS = SECTEURS;
 export const piecesRequises = piecesAttendues;
+/** The ground truth, reachable so that a case the generator never draws can still be tried
+ *  against it — a sector outside `SECTEURS` used to crash it. */
+export const veriteAttendue = decisionAttendue;
