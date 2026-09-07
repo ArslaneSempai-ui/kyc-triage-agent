@@ -8,6 +8,13 @@
  * The draw is deterministic: without a fixed seed two measurements cannot be compared,
  * and you end up crediting a code change for what was only a different sample.
  */
+/* piege:ok devise-tapee — c'est ICI que la devise est déclarée, et c'est précisément le
+   remède de la règle : « lire la devise dans la table qui déclare les unités des montants ».
+   Une table déclarante contient forcément le symbole qu'elle déclare ; la signaler
+   reviendrait à interdire le seul endroit où il a le droit d'être écrit. Ce que la règle
+   traque, ce sont les COPIES de cette affirmation dans les sites de rendu — il n'y en a plus. */
+/** The unit every `volumeAnnuelDeclare` is expressed in. Rendering reads it here. */
+export const MONTANTS = { symbole: "€", code: "EUR" };
 const PAYS_RISQUE = new Set(["IR", "KP", "SY", "MM", "AF"]);
 const PAYS_SURVEILLES = new Set(["PA", "AE", "KY", "VG", "SC"]);
 const PAYS_STANDARD = ["FR", "GR", "DE", "ES", "IT", "BE", "NL", "PT", "US", "GB"];

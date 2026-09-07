@@ -10,7 +10,7 @@
  * l'analyste. Il ignore les volumes typiques par secteur et se rabat sur un seuil
  * generic ceiling — an ordinary approximation, and a source of measurable errors.
  */
-import { PAYS_A_RISQUE, PAYS_SOUS_SURVEILLANCE, piecesRequises } from "./cas.js";
+import { MONTANTS, PAYS_A_RISQUE, PAYS_SOUS_SURVEILLANCE, piecesRequises } from "./cas.js";
 import { MULTIPLE_ANORMAL, netteteVolume, PRUDENCE } from "./referentiel.js";
 /**
  * How long before expiry a document stops counting as valid.
@@ -238,8 +238,8 @@ function appliquer(c, referentiel, k = CONSTANTES) {
                 code: "R-VOL", regulation: "currencyReport",
                 clause: { fr: "31 CFR 1010.311 — les opérations en espèces au-delà de 10 000 $ sont déclarées",
                     en: "31 CFR 1010.311 — currency transactions above $10,000 are reported" },
-                constat: { fr: `Volume annuel déclaré : ${volume.toLocaleString("fr-FR")} €`,
-                    en: `Declared annual volume: €${volume.toLocaleString("en-GB")}` },
+                constat: { fr: `Volume annuel déclaré : ${volume.toLocaleString("fr-FR")} ${MONTANTS.symbole}`,
+                    en: `Declared annual volume: ${MONTANTS.symbole}${volume.toLocaleString("en-GB")}` },
                 impose: "escalader", nettete: 0.35,
             });
         }
@@ -251,8 +251,8 @@ function appliquer(c, referentiel, k = CONSTANTES) {
                 code: "R-VOL", regulation: "currencyReport",
                 clause: { fr: "31 CFR 1010.311 — les opérations en espèces au-delà de 10 000 $ sont déclarées",
                     en: "31 CFR 1010.311 — currency transactions above $10,000 are reported" },
-                constat: { fr: `${volume.toLocaleString("fr-FR")} € déclarés, soit ${rapport.toFixed(1)}× l'usage du secteur « ${c.activite.secteur} »`,
-                    en: `€${volume.toLocaleString("en-GB")} declared, ${rapport.toFixed(1)}× the norm for “${c.activite.secteur}”` },
+                constat: { fr: `${volume.toLocaleString("fr-FR")} ${MONTANTS.symbole} déclarés, soit ${rapport.toFixed(1)}× l'usage du secteur « ${c.activite.secteur} »`,
+                    en: `${MONTANTS.symbole}${volume.toLocaleString("en-GB")} declared, ${rapport.toFixed(1)}× the norm for “${c.activite.secteur}”` },
                 impose: "escalader", nettete: netteteVolume(rapport, k.multipleAnormal),
             });
         }
