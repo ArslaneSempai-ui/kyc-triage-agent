@@ -449,7 +449,7 @@ test("le relevé des échecs rend compte de tous les échecs, montrés ou non", 
   assert.ok(montrees.length >= 1, "aucune forme imprimée : le relevé ne montre plus rien");
   const vues = montrees.reduce((a, b) => a + b, 0);
 
-  const reste = Number(sortie.match(/(\d+) decision\(s\) — not listed above/)?.[1] ?? 0);
+  const reste = Number(sortie.match(/(\d+) decision\(s\), not listed above/)?.[1] ?? 0);
   assert.equal(vues + reste, total,
     `${vues} montrée(s) + ${reste} annoncée(s) ≠ ${total} au total : des échecs disparaissent du relevé`);
 

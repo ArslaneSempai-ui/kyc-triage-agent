@@ -73,7 +73,7 @@ export function decrire(e: Echec, langue: "fr" | "en" = "en"): string {
   for (const r of e.verdict.regles) {
     lignes.push(`  ${r.code.padEnd(9)} ${r.constat[langue]}  [sharpness ${r.nettete.toFixed(2)}]`);
   }
-  if (e.verdict.regles.length === 0) lignes.push("  no rule fired — the decision rested on an absence of grounds");
+  if (e.verdict.regles.length === 0) lignes.push("  no rule fired: the decision rested on an absence of grounds");
   return lignes.join("\n");
 }
 
@@ -97,7 +97,7 @@ if (isMain(import.meta)) {
   const reste = formes.slice(MONTREES);
   if (reste.length) {
     const dedans = reste.reduce((s, [, n]) => s + n, 0);
-    console.log(`\n  ${reste.length} further shape(s), ${dedans} decision(s) — not listed above`);
+    console.log(`\n  ${reste.length} further shape(s), ${dedans} decision(s), not listed above`);
   }
 
   const manquements = echecs.filter((e) => e.genre === "manquement");
@@ -106,7 +106,7 @@ if (isMain(import.meta)) {
    * followed by blank space — which reads as a rendering fault, not as good news. A count
    * that is zero has to say so in words.
    */
-  console.log(`\n\nTHE BREACH${manquements.length === 1 ? "" : "ES"} — decided alone, should have gone up\n`);
+  console.log(`\n\nTHE BREACH${manquements.length === 1 ? "" : "ES"}: decided alone, should have gone up\n`);
   if (manquements.length === 0) {
     console.log("  none: no file was decided alone that should have gone to a human\n");
   }

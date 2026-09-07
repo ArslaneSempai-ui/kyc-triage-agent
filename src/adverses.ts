@@ -71,7 +71,7 @@ export const ADVERSES: Adverse[] = [
     attaque: "a sanctions match parked just below the look-at-it threshold",
     attendu: "escalader",
     pourquoi:
-      "0.54 against a 0.55 cut is not a cleaner match than 0.56 — it is the same evidence on " +
+      "0.54 against a 0.55 cut is not a cleaner match than 0.56; it is the same evidence on " +
       "the other side of a number I chose. Anyone who can see the threshold can sit under it.",
     cas: base({ id: "A-SEUIL", criblage: { correspondanceSanction: 0.54, correspondancePep: 0.1 } }),
   },
@@ -134,7 +134,7 @@ export const ADVERSES: Adverse[] = [
     attaque: "a sector the reference table does not list",
     attendu: "escalader",
     pourquoi:
-      "With no norm to compare against, the agent falls back to a flat ceiling — and the " +
+      "With no norm to compare against, the agent falls back to a flat ceiling, and the " +
       "sweep says that ceiling decides a great deal when the table has a hole in it. A file " +
       "the reference cannot judge should reach a human, not a default.",
     cas: base({
@@ -175,7 +175,7 @@ export const ADVERSES: Adverse[] = [
     attendu: "complement",
     pourquoi:
       "The coverage rule fires below 75 %. At exactly 75 % a quarter of the company is " +
-      "unaccounted for and the rule is silent — a boundary chosen by me, sitting one " +
+      "unaccounted for and the rule is silent: a boundary chosen by me, sitting one " +
       "percentage point from a different answer.",
     cas: societe({
       id: "A-BE-100",
@@ -213,7 +213,7 @@ export const ADVERSES: Adverse[] = [
   },
   {
     id: "A-SANCTION-NETTE",
-    attaque: "an unambiguous sanctions match — the one case that must never slip",
+    attaque: "an unambiguous sanctions match, the one case that must never slip",
     attendu: "escalader",
     pourquoi:
       "A control, not an attack. If this ever stops escalating, the gallery above is " +
@@ -247,7 +247,7 @@ if (isMain(import.meta)) {
   const r = eprouver();
   const held = r.filter((x) => x.tenu).length;
 
-  console.log(`\n${ADVERSES.length} files written to break the agent — ${held} held, ${r.length - held} did not\n`);
+  console.log(`\n${ADVERSES.length} files written to break the agent: ${held} held, ${r.length - held} did not\n`);
   console.log("  case                what it attacks                                          expected   got");
   console.log("  " + "─".repeat(100));
 
@@ -262,7 +262,7 @@ if (isMain(import.meta)) {
   if (failed.length > 0) {
     console.log("\nWhat gets through, and why it matters\n");
     for (const x of failed) {
-      console.log(`  ${x.adverse.id} — expected ${x.adverse.attendu}, got ${x.obtenu}`);
+      console.log(`  ${x.adverse.id}: expected ${x.adverse.attendu}, got ${x.obtenu}`);
       console.log(`    ${x.adverse.pourquoi.replace(/\s+/g, " ")}\n`);
     }
   }

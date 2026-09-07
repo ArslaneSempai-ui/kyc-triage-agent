@@ -4,10 +4,10 @@ An agent applies a bank's onboarding procedure to each client file, cites the cl
 every decision, and **hands the file to a human when it isn't confident**.
 
 <!-- figures:finding -->
-**The finding.** Moving the confidence bar was never the expensive lever. The escalations came from one badly informed rule — a flat volume ceiling applied to every sector — and giving the agent sector context took automation from **36.0 %** to **58.3 %**, wasted escalations from 159 to 69, and breaches from 1 to **0**. Dragging the bar had cost breaches for every point it bought.
+**The finding.** Moving the confidence bar was never the expensive lever. The escalations came from one badly informed rule (a flat volume ceiling applied to every sector) and giving the agent sector context took automation from **36.0 %** to **58.3 %**, wasted escalations from 159 to 69, and breaches from 1 to **0**. Dragging the bar had cost breaches for every point it bought.
 <!-- /figures:finding -->
 
-**[Try it in your browser →](https://arslanesempai-ui.github.io/kyc-triage-agent/)** — the whole agent runs client-side. Drag the confidence bar and watch the trade-off move. No install, nothing leaves your machine.
+**[Try it in your browser →](https://arslanesempai-ui.github.io/kyc-triage-agent/)**. The whole agent runs client-side. Drag the confidence bar and watch the trade-off move. No install, nothing leaves your machine.
 
 ![Dragging the confidence bar: the trade-off moves, the breaches do not](images/demo.gif)
 
@@ -36,7 +36,7 @@ Three things have to hold at once:
 1. Every decision **cites the clause** it rests on. A decision without a reason is
    indefensible, whoever made it.
 2. The agent **decides only where it is confident**, and says so out loud when it isn't.
-3. The cost of that boundary is **measured**, not asserted — because moving it trades
+3. The cost of that boundary is **measured**, not asserted, because moving it trades
    analyst hours against regulatory exposure, and that trade belongs to the business.
 
 I spent six years on the receiving end of this work: 30,000+ profiles reviewed, 6,000+
@@ -49,17 +49,17 @@ size of the pile on my desk.
 
 ![The review queue](images/queue.png)
 
-The queue is sorted **least confident first** — that's where a human opinion is worth the
+The queue is sorted **least confident first**: that's where a human opinion is worth the
 most. Each file shows what the agent saw, which rules fired, the clause behind each one,
 and how sharp the observation was. The interface runs in French or English.
 
 No action is visually promoted. An early version filled *Approve* in green, which made
-approval the reflex click on a compliance queue — precisely backwards. Now only the
+approval the reflex click on a compliance queue, precisely backwards. Now only the
 agent's own proposal is marked, and quietly: it informs, it doesn't invite.
 
 When a human overrides, the disagreement is recorded. That's the only material that will
 ever support the sentence "the agent is systematically wrong here" instead of "the
-analysts are complaining". The agreement rate stays hidden until ten decisions exist —
+analysts are complaining". The agreement rate stays hidden until ten decisions exist,
 a rate over two samples is noise wearing a percentage sign.
 
 The threshold carries its own honesty check. Most escalations come from rules that are
@@ -74,8 +74,8 @@ teaches people the tool is broken.
 <!--p:triage.dossiers-->400<!--/p--> synthetic files, each carrying the decision an experienced analyst would have made.
 Two errors share the word "mistake" and do not share a price:
 
-- **an unnecessary escalation** — a file sent to a human for nothing: *operational cost*
-- **a breach** — decided alone when it should have been escalated: *regulatory cost*
+- **an unnecessary escalation**: a file sent to a human for nothing (*operational cost*)
+- **a breach**: decided alone when it should have been escalated (*regulatory cost*)
 
 Counting them together hides the only one that matters.
 
@@ -94,7 +94,7 @@ Notice that 0.50 and 0.70 produce **identical results**. A week spent tuning tha
 would have bought nothing.
 
 The 146 unnecessary escalations weren't caused by a rule firing wrongly. They were caused
-by **low confidence** — and tracing which rule capped it gave a single answer: 125 of 146
+by **low confidence**, and tracing which rule capped it gave a single answer: 125 of 146
 came from the volume rule. The agent was applying one flat ceiling of €1.5M to every
 sector. An import-export business at €3M is ordinary; a consultancy at €3M is not. The
 agent didn't know the difference, so it stopped.
@@ -108,7 +108,7 @@ Giving it the sector reference it was missing:
 | **With sector context** | **58.3 %** | **69** | **0** |
 <!-- /figures:context -->
 
-**+39 % relative automation, −42 % wasted analyst time, identical regulatory safety** —
+**+39 % relative automation, −42 % wasted analyst time, identical regulatory safety**:
 and none of it came from the threshold.
 
 > You don't tune your way out of a missing-context problem.
@@ -121,7 +121,7 @@ the whole argument for making confidence a first-class output instead of a hidde
 
 ## What every decision cites
 
-An earlier version of this agent cited clauses I had invented — `PR-101 §5` was a label
+An earlier version of this agent cited clauses I had invented: `PR-101 §5` was a label
 chosen so that decisions would reference *something*, and a reader could check none of
 them. For a tool whose entire argument is that an automated decision must be defensible,
 that was the one thing it could not do.
@@ -136,7 +136,7 @@ citation is not.
 | [31 CFR 1020.320(a)(2)](https://www.law.cornell.edu/cfr/text/31/1020.320) | A bank must report a suspicious transaction conducted or attempted by, at or through it once the amount involved or aggregated reaches the threshold. | $5,000 | 2026-08-17 |
 | [31 CFR 1010.230(d)(1)](https://www.law.cornell.edu/cfr/text/31/1010.230) | Each individual holding a quarter or more of the equity of a legal entity customer must be identified. | 25 % | 2026-08-17 |
 | [31 CFR 1010.230(d)(2)](https://www.law.cornell.edu/cfr/text/31/1010.230) | One individual with significant responsibility to control or direct the entity must be identified, in addition to any owners. | 1 individual | 2026-08-17 |
-| [31 CFR 1010.230(a)](https://www.law.cornell.edu/cfr/text/31/1010.230) | Beneficial owners are identified when the account is opened, not afterwards. | — | 2026-08-17 |
+| [31 CFR 1010.230(a)](https://www.law.cornell.edu/cfr/text/31/1010.230) | Beneficial owners are identified when the account is opened, not afterwards. | n/a | 2026-08-17 |
 | [31 CFR 1010.311](https://www.law.cornell.edu/cfr/text/31/1010.311) | A currency transaction above the threshold is reported by the financial institution. | $10,000 | 2026-08-17 |
 <!-- /figures:citations -->
 
@@ -144,7 +144,7 @@ Nothing here is cited from memory. Every figure was fetched from the source on t
 shown, and a test fails if a rule claims a regulation whose citation its clause does not
 carry.
 
-The synthetic files remain synthetic — a real onboarding file cannot leave a bank. What is
+The synthetic files remain synthetic; a real onboarding file cannot leave a bank. What is
 no longer invented is the law they are judged against.
 
 ---
@@ -175,13 +175,13 @@ is trying to stop.
 | held | a company whose identified ownership sums to exactly 75 % | complement | complement |
 | held | a high-risk jurisdiction reached through an intermediate one | escalader | escalader |
 | held | a declared annual volume of zero | complement | complement |
-| held | an unambiguous sanctions match — the one case that must never slip | escalader | escalader |
+| held | an unambiguous sanctions match, the one case that must never slip | escalader | escalader |
 
 ### What still gets through
 
-**A-SEUIL** — expected `escalader`, got `approuver`.
+**A-SEUIL**: expected `escalader`, got `approuver`.
 
-> 0.54 against a 0.55 cut is not a cleaner match than 0.56 — it is the same evidence on the other side of a number I chose. Anyone who can see the threshold can sit under it.
+> 0.54 against a 0.55 cut is not a cleaner match than 0.56; it is the same evidence on the other side of a number I chose. Anyone who can see the threshold can sit under it.
 
 These are not scored as a rate: 12 hand-written cases cannot support one, and the count that held is not the point. The point is that what fails is **named**, and a named failure is something a reviewer can argue about.
 <!-- /figures:adversarial -->
@@ -201,7 +201,7 @@ better-looking headline. The agent was more automated because it was looking at 
 
 ## Against doing no work at all
 
-"Handles <!--p:triage.partAutomatisee~pc0-->58 %<!--/p--> without a human" — against what? Escalate everything, or approve
+"Handles <!--p:triage.partAutomatisee~pc0-->58 %<!--/p--> without a human": against what? Escalate everything, or approve
 everything: both take a line to implement, and they bracket the problem.
 
 <!-- figures:baselines -->
@@ -213,7 +213,7 @@ everything: both take a line to implement, and they bracket the problem.
 <!-- /figures:baselines -->
 
 Escalating everything is safe and unaffordable. Approving everything is free and
-indefensible. Beating either one alone is worthless — the claim worth making is holding
+indefensible. Beating either one alone is worthless; the claim worth making is holding
 most of the automation of the second while keeping the safety of the first, and it can
 only be read beside both numbers.
 
@@ -230,42 +230,42 @@ judgement, and a portfolio piece that publishes results without saying which jud
 they rest on is asking to be taken on trust.
 
 So each one is swept across the range a competent person could disagree with me over, and
-judged on **breaches** — files decided alone that had to go to a human. That is the error
+judged on **breaches**: files decided alone that had to go to a human. That is the error
 with a fine attached; wasted escalations are analyst time.
 
 <!-- figures:chosen -->
 Measured over 5 independent draws of 800 files. What no source says about each of them:
 
-- `seuilSanctionCertain` — no regulation says where a screening match becomes certain
-- `seuilSanctionDoute` — nor where it becomes worth a second look
-- `volumeEleve` — a flat ceiling, used only where no sector reference exists
-- `multipleAnormal` — no source defines an abnormal multiple of a sector norm
-- `prudence` — derived from the largest observed reference error, not from the outcome
+- `seuilSanctionCertain`: no regulation says where a screening match becomes certain
+- `seuilSanctionDoute`: nor where it becomes worth a second look
+- `volumeEleve`: a flat ceiling, used only where no sector reference exists
+- `multipleAnormal`: no source defines an abnormal multiple of a sector norm
+- `prudence`: derived from the largest observed reference error, not from the outcome
 
 | Constant | In use | Plausible range | Breaches per 800 files, low → high | Verdict |
 |---|---|---|---|---|
 | `seuilSanctionCertain` | 0.85 | 0.70 – 0.98 | 0.0 → 0.0 | No effect on either cost |
 | `seuilSanctionDoute` | 0.55 | 0.30 – 0.80 | 0.0 → 22.6 | **Decides breaches**; the boundary is under the noise |
-| `volumeEleve` | 1,500,000 | 400,000 – 5,000,000 | 0.0 → 19.6 † | **Dormant** — inert here, decisive without the sector table |
+| `volumeEleve` | 1,500,000 | 400,000 – 5,000,000 | 0.0 → 19.6 † | **Dormant**: inert here, decisive without the sector table |
 | `multipleAnormal` | 3.50 | 2.00 – 8.00 | 0.0 → 11.4 | **Decides breaches**; the boundary is under the noise |
 | `prudence` | 0.85 | 0.70 – 1.00 | 0.0 → 4.2 | **Decides breaches**; the boundary is under the noise |
 
-† measured with the sector table removed — see the note below.
+† measured with the sector table removed. See the note below.
 
-0 of 5 can be defended with this measurement. 3 cost breaches at the far end of their range in every draw, and no draw agrees with the others on where that starts — they matter, and this measurement cannot tell you where to set them.
+0 of 5 can be defended with this measurement. 3 cost breaches at the far end of their range in every draw, and no draw agrees with the others on where that starts: they matter, and this measurement cannot tell you where to set them.
 <!-- /figures:chosen -->
 
 Two things about the method, both of which I got wrong first.
 
 **One draw cannot tell a threshold from a coincidence.** The first version swept a single
-sample and reported all but one of them as decisive — every one on a move from
+sample and reported all but one of them as decisive, every one on a move from
 no breach to a single one in 1,200 files. A different seed puts that edge somewhere else. Five
 independent draws, and the question splits in two: *does it cost?* and *where does it start
 costing?* The ones that cost breaches answer yes and don't know, which is awkward and true.
 
 **Inert is not the same as irrelevant.** `volumeEleve` came back "no effect" because the
 check meant to run it without a sector reference passed `undefined` to a parameter whose
-default *was* the reference — so every dormancy check silently ran with the table. Removing
+default *was* the reference, so every dormancy check silently ran with the table. Removing
 the table moves that constant from none to nearly twenty breaches per 800 files, the
 figure marked † above. The tool was telling a
 reader to ignore the one number they would need the moment their reference data had a hole
@@ -295,13 +295,13 @@ asks how approximate it is allowed to be.
 
 The table is not symmetric, and neither is the price. Understating a norm makes the agent
 escalate work it could have handled: analyst time, visible, nobody harmed. Overstating one
-lets files through uncontrolled — and **improves every figure a dashboard shows** while
+lets files through uncontrolled, and **improves every figure a dashboard shows** while
 producing the only error that carries a fine.
 
 <!-- figures:margin -->
-The reference is used at **85 %** of its stated values. That margin is derived from the largest overstatement in the table (+14 %, on crypto-assets): 1 / 1.14 ≈ 0.88, rounded down. It is not chosen by looking at which value makes the results look best — that would be fitting the answer.
+The reference is used at **85 %** of its stated values. That margin is derived from the largest overstatement in the table (+14 %, on crypto-assets): 1 / 1.14 ≈ 0.88, rounded down. It is not chosen by looking at which value makes the results look best: that would be fitting the answer.
 
-The sweep above then checked the derivation against outcomes, which is a different question. No draw loses a file anywhere below **0.88**, and the value in use is 0.85. The derivation landed inside the safe band with 0.03 to spare out of a range 0.30 wide — and that edge is one only 1 of 5 draws can see, so the headroom is smaller than the resolution of the thing measuring it. Derived honestly is not the same as derived safely; only the first of those two was ever checked, and the second is closer than the derivation suggested.
+The sweep above then checked the derivation against outcomes, which is a different question. No draw loses a file anywhere below **0.88**, and the value in use is 0.85. The derivation landed inside the safe band with 0.03 to spare out of a range 0.30 wide, and that edge is one only 1 of 5 draws can see, so the headroom is smaller than the resolution of the thing measuring it. Derived honestly is not the same as derived safely; only the first of those two was ever checked, and the second is closer than the derivation suggested.
 <!-- /figures:margin -->
 
 ---
@@ -322,7 +322,7 @@ The sweep above then checked the derivation against outcomes, which is a differe
 
 **No breach remains.** Every file that had to go to a human went to a human.
 
-The two worst remaining errors are wasted escalations — analyst time, not exposure:
+The two worst remaining errors are wasted escalations; analyst time, not exposure:
 
 ```
 C-0001 · Ferreira Logistics · societe · NL
@@ -348,7 +348,7 @@ C-0003 · Haddad Ventures · societe · GR
 <!-- /figures:failures -->
 
 A count is a claim a reader takes on trust. A named file with the rules that fired beside
-the decision an analyst would have made is something a compliance officer can argue with —
+the decision an analyst would have made is something a compliance officer can argue with,
 and arguing with it is the point.
 
 ---
@@ -374,8 +374,8 @@ not.
 | retrieved | `31 CFR 1010.230(d)(2)` | One individual with significant responsibility to control or direct the entity must be identified, in addition to any owners. | retrieved 2026-08-17 |
 | retrieved | `31 CFR 1010.230(a)` | Beneficial owners are identified when the account is opened, not afterwards. | retrieved 2026-08-17 |
 | retrieved | `31 CFR 1010.311` | A currency transaction above the threshold is reported by the financial institution. | retrieved 2026-08-17 |
-| measured | `tauxAutomatisation` | share of files decided without a human | measured on the synthetic case set below — see `genererCas` |
-| measured | `manquements` | files decided alone that had to go to a human — the costly error | the error with a fine attached, counted separately from wasted analyst time |
+| measured | `tauxAutomatisation` | share of files decided without a human | measured on the synthetic case set below; see `genererCas` |
+| measured | `manquements` | files decided alone that had to go to a human, the costly error | the error with a fine attached, counted separately from wasted analyst time |
 | measured | `escaladesInutiles` | files sent to an analyst for nothing | analyst time; visible, and nobody is harmed |
 | measured | `precisionAutomatisee` | how often an automated decision is the right one | published with its 95 % interval, because 400 files is not many |
 | measured | `bande` | the range over which each chosen constant changes nothing | five independent draws; one draw cannot tell a threshold from a coincidence |
@@ -383,15 +383,15 @@ not.
 | assumed | `REFERENTIEL_SECTORIEL` | typical annual volume by sector | a market average, approximate like every reference table; the sweep says how wrong it may be |
 | chosen | `seuilSanctionCertain` | above this, a screening match is treated as unambiguous | no regulation says where a match becomes certain; the sweep says this one decides |
 | chosen | `seuilSanctionDoute` | below this, a screening match is not looked at at all | it costs breaches at the far end of its range; where it starts is under the sampling noise |
-| chosen | `volumeEleve` | the flat ceiling used only where no sector reference exists | dormant with a complete table, decisive without one — not the same as irrelevant |
+| chosen | `volumeEleve` | the flat ceiling used only where no sector reference exists | dormant with a complete table, decisive without one; not the same as irrelevant |
 | chosen | `multipleAnormal` | multiple of the sector norm above which a volume is examined | no source defines an abnormal multiple; it costs breaches at 8× |
-| chosen | `prudence` | the margin taken against the reference table being wrong | derived from observed reference error, not from outcomes — and the headroom is thinner than the measurement's resolution |
-| chosen | `nettete` | how sharp each rule's trigger is, from 0 to 1 | the ordering is defensible — an unreadable document is fuzzier than an expired one; the values are mine |
+| chosen | `prudence` | the margin taken against the reference table being wrong | derived from observed reference error, not from outcomes, and the headroom is thinner than the measurement's resolution |
+| chosen | `nettete` | how sharp each rule's trigger is, from 0 to 1 | the ordering is defensible: an unreadable document is fuzzier than an expired one; the values are mine |
 | chosen | `genererCas` | the shape of the synthetic case set, and its ground truth | an agent scored against cases whose answers I wrote is marked by its own author |
 <!-- /figures:provenance -->
 
 The line that costs the most to write is the last one. "No breach in four hundred files" is
-measured — run it and you get it, the draw is seeded — and the four hundred files are
+measured (run it and you get it, the draw is seeded) and the four hundred files are
 synthetic, built by me, against a ground truth I also wrote. **An agent scored on cases
 whose answers I chose is being marked by its own author.**
 
@@ -402,7 +402,7 @@ synthetic case set a real one.
 
 What survives is narrower and worth stating exactly: **the discipline is the finding, the
 score is illustration.** That an automated decision should carry a citation, stop where it
-is unsure, and be scored on breaches rather than on accuracy — that holds anywhere. That it
+is unsure, and be scored on breaches rather than on accuracy: that holds anywhere. That it
 reaches <!--p:triage.partAutomatisee~pc0-->58 %<!--/p--> automation with no breach holds on my four hundred files.
 
 ---
@@ -424,7 +424,7 @@ Node 26 with native TypeScript, `node:test`, no build step, no dependencies.
 
 **Confidence** combines two things: how sharp each observation was, and whether any rule
 left doubt behind. A sanctions match at 0.97 and one at 0.58 fire the same rule and do
-not deserve the same confidence — conflating them is what makes an automation dangerous.
+not deserve the same confidence; conflating them is what makes an automation dangerous.
 
 **The most severe decision wins.** Asking someone flagged against a sanctions list to
 send a missing utility bill would tip them off.
@@ -440,7 +440,7 @@ its own marking scheme scores 100 % and demonstrates nothing.
 ## What it doesn't do
 
 - **No LLM.** Every decision here is a rule with a citation. That's a deliberate choice
-  for this domain, not a limitation I worked around — and it means the confidence number
+  for this domain, not a limitation I worked around, and it means the confidence number
   is something I can explain rather than something I hope for.
 - **No document reading.** Cases arrive structured. Extracting them from PDFs is a
   separate problem, which I solved separately in
@@ -450,7 +450,7 @@ its own marking scheme scores 100 % and demonstrates nothing.
 - **No pagination.** The queue shows the 25 least-confident files of however many are
   waiting, and says so.
 - **Synthetic data.** Every conclusion above holds for this generator. On a real book of
-  business, all of it must be re-measured — which is the first finding of the previous
+  business, all of it must be re-measured, which is the first finding of the previous
   project, and the reason the measurement harness ships with the tool.
 
 ---
@@ -486,7 +486,7 @@ against known uncertainty, and nothing protects against the other kind.
 
 **Measure the generator against something real before building on it.** Every figure here
 inherits the shape of a case set I invented. A hundred real files, anonymised and never
-published, would have grounded the whole thing — and I would have found out early whether
+published, would have grounded the whole thing, and I would have found out early whether
 the sector-volume rule is the lever it appears to be, rather than at the end.
 
 **Write the sweep before the tuning, not after.** I picked the constants by judgement,
@@ -495,7 +495,7 @@ defended by this measurement. Had it come first, I would have designed the case 
 resolve them instead of discovering it could not.
 
 **Separate the rule engine from the scoring earlier.** The two were entangled long enough
-that I nearly reimplemented the scoring rule inside the agent — the failure that gives you
+that I nearly reimplemented the scoring rule inside the agent: the failure that gives you
 100 % and demonstrates nothing. It took a deliberate rewrite to keep them apart, and it
 would have cost nothing to start there.
 
@@ -516,12 +516,12 @@ Everything asserted here is anchored somewhere a reader can reach:
 | Every constant I chose | Declared in the inventory with an admission, and swept |
 | Every failure | Published in full rather than summarised into a rate |
 | Every rate | Carries its 95 % interval, and is withdrawn below 20 observations |
-| The case draw | Seeded — a stranger running `npm test` gets these exact numbers |
+| The case draw | Seeded: a stranger running `npm test` gets these exact numbers |
 
 That list is the actual deliverable. A tool that produces a good number and cannot show
 where the number came from is worth less than one that produces a worse number and can.
 
 ---
 
-**Arslane Chaouche Ramdane** — six years in AML/KYC and financial crime operations,
+**Arslane Chaouche Ramdane**, six years in AML/KYC and financial crime operations,
 moving into AI transformation work.

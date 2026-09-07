@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Onboarding triage — and where the agent hands over</title>
+<title>Onboarding triage, and where the agent hands over</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23fbfaf7'/%3E%3Crect x='2' y='4' width='12' height='1' fill='%23111'/%3E%3Crect x='2' y='7' width='12' height='1' fill='%23111'/%3E%3Crect x='2' y='11' width='12' height='2' fill='%23111'/%3E%3C/svg%3E" />
 <link rel="stylesheet" href="registre.css" />
 </head>
@@ -16,9 +16,9 @@
     </div>
   </div>
 <p class="renvoi" style="margin-bottom:1.5rem">
-This runs entirely in your browser — no server, no data leaves your machine, and the review
+This runs entirely in your browser: no server, no data leaves your machine, and the review
 queue you build is yours alone. <b>Drag the threshold line</b> across the confidence
-distribution and watch what it moves — and what it never will. The 400 client files are
+distribution and watch what it moves, and what it never will. The 400 client files are
 <b>synthetic and seeded</b>; the regulations each decision cites are real and linked.
 <a href="https://github.com/ArslaneSempai-ui/kyc-triage-agent">Source and method</a>.
 </p>
@@ -153,8 +153,8 @@ const T = {
     seuilQuoi: "Below this confidence it hands the file over instead of deciding. This setting belongs to the business, not to whoever writes the code.",
     seuilNom: "Confidence bar below which the agent hands over",
     attribution: (regle, seuil) =>
-      `Of the current escalations, <b>${regle}</b> come from a rule that is certain — dragging the line will not move those. Only <b>${seuil}</b> depend on where you put it.`,
-    refLabel: "Give the agent the usual volumes per sector — without them it sends perfectly ordinary files to an analyst",
+      `Of the current escalations, <b>${regle}</b> come from a rule that is certain; dragging the line will not move those. Only <b>${seuil}</b> depend on where you put it.`,
+    refLabel: "Give the agent the usual volumes per sector; without them it sends perfectly ordinary files to an analyst",
 
     compromisTitre: "What each setting costs",
     compromisQuoi: "Measured over the 400 files. A breach is an uncontrolled onboarding; an avoidable escalation is analyst time spent for nothing.",
@@ -171,28 +171,28 @@ const T = {
     colManq: "breaches", colEvit: "avoidable escalations",
     avecRef: "with sector reference", sansRef: "without sector reference",
 
-    fileTitre: (n) => `Review queue — ${n} file${n > 1 ? "s" : ""}`,
-    filePartielle: (m, n) => `Review queue — showing ${m} of ${n}`,
+    fileTitre: (n) => `Review queue: ${n} file${n > 1 ? "s" : ""}`,
+    filePartielle: (m, n) => `Review queue: showing ${m} of ${n}`,
     fileVide: "Nothing to review. At this setting the agent decides everything itself.",
-    legende: "The “·” marks what the agent proposed. No action is preselected — the call is yours.",
+    legende: "The “·” marks what the agent proposed. No action is preselected; the call is yours.",
     figSeuilTitre: (n) => `${n} files, ordered by the agent's confidence`,
     figSeuilAria: "Distribution of the agent's confidence across every file. Below the threshold "
       + "everything goes to an analyst. Above it most are decided alone, but a share keeps being "
       + "escalated by a rule that does not depend on confidence.",
-    figSeuilEtiq: (s2, n) => `threshold ${s2} — ${n} files in this band`,
+    figSeuilEtiq: (s2, n) => `threshold ${s2}: ${n} files in this band`,
     figSeuilAvant: "all go to an analyst",
     figSeuilApres: "the agent decides alone…",
     figSeuilCleSeul: "decided alone",
     figSeuilClePart: "left to an analyst",
-    parLaRegle: "Escalated by the rule itself — the agent is certain this file belongs with an analyst.",
-    sousLeSeuil: (c, s) => `Confidence ${c.toFixed(2)} below the ${s.toFixed(2)} bar — decision left to an analyst`,
-    aucuneRegle: "No rule fired — the decision would rest on an absence of grounds.",
+    parLaRegle: "Escalated by the rule itself: the agent is certain this file belongs with an analyst.",
+    sousLeSeuil: (c, s) => `Confidence ${c.toFixed(2)} below the ${s.toFixed(2)} bar: decision left to an analyst`,
+    aucuneRegle: "No rule fired: the decision would rest on an absence of grounds.",
     motifChamp: "Reason for your decision (optional)",
     proposeTitre: "What the agent proposed",
     nettete: "sharpness", confiance: "confidence", declares: "declared", opere: "operates in",
 
     traiteesTitre: "Recent human decisions",
-    traiteesPartielles: (m, n) => `Recent human decisions — showing ${m} of ${n}`,
+    traiteesPartielles: (m, n) => `Recent human decisions: showing ${m} of ${n}`,
     traiteesVide: "No human decision yet.",
     proposait: "the agent proposed:",
     remise: "Clear recorded decisions",
@@ -241,7 +241,7 @@ function blocChiffres(c) {
   // combien il en manque plutôt que d'afficher un chiffre qui trompe.
   cases.push(c.assezDeReprises
     ? { v: pc(c.tauxAccord), l: L.accord }
-    : { v: "—", l: L.accordAttente(c.manquePourConclure), attente: true });
+    : { v: "n/a", l: L.accordAttente(c.manquePourConclure), attente: true });
 
   /*
    * Un compte, pas des tuiles.
@@ -268,7 +268,7 @@ function blocChiffres(c) {
       <div class="ligne total ${c.manquements > 0 ? "defavorable" : "favorable"}">
         <span class="intitule">${esc(manquements.l)}</span>
         <span class="valeur">${esc(manquements.v)}</span></div>
-      <div class="renvoi">${esc(accord.l)}${accord.attente ? "" : ` — ${esc(accord.v)}`}</div>
+      <div class="renvoi">${esc(accord.l)}${accord.attente ? "" : `: ${esc(accord.v)}`}</div>
     </div></section>`;
 }
 
@@ -390,7 +390,7 @@ function blocCompromis(c) {
   $("#compromis").innerHTML = `
     <div class="feuillet">
       <div class="quoi">${esc(L.compromisQuoi)}
-        — <em>${esc(c.referentielActif ? L.avecRef : L.sansRef)}</em></div>
+        (<em>${esc(c.referentielActif ? L.avecRef : L.sansRef)}</em>)</div>
       <div class="titre-fig">${esc(L.figAutoTitre)}</div>${figAuto}
       <div class="titre-fig">${esc(L.figEscaladeTitre)}</div>${figEscalade}
       <details><summary>${esc(L.voirChiffres)}</summary>

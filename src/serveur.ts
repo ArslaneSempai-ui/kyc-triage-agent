@@ -175,7 +175,7 @@ const FICHIER = fileURLToPath(new URL("../data/etat.json", import.meta.url));
 function garderDeCote(raison: string): void {
   const copie = `${FICHIER}.illisible-${Date.now()}`;
   try { copyFileSync(FICHIER, copie); } catch { /* not copyable either: the message below is what is left */ }
-  console.error(`unreadable state (${raison}) — a copy has been kept at ${copie}`);
+  console.error(`unreadable state (${raison}): a copy has been kept at ${copie}`);
   console.error("the server restarts from an empty queue and will overwrite the file on the first decision");
 }
 

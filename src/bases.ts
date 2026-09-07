@@ -73,7 +73,7 @@ if (isMain(import.meta)) {
   }
   console.log(
     "\nEscalating everything is safe and unaffordable. Approving everything is free and" +
-    "\nindefensible. Neither is hard to beat on its own — the claim is holding most of the" +
+    "\nindefensible. Neither is hard to beat on its own: the claim is holding most of the" +
     "\nautomation of the second while keeping the safety of the first.\n",
   );
 }

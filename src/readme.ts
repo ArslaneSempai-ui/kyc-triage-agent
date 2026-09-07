@@ -43,7 +43,7 @@ const avec = mesurer(cas, 0.7, REFERENTIEL_SECTORIEL);
  */
 const finding =
   `**The finding.** Moving the confidence bar was never the expensive lever. The escalations ` +
-  `came from one badly informed rule — a flat volume ceiling applied to every sector — and ` +
+  `came from one badly informed rule (a flat volume ceiling applied to every sector) and ` +
   `giving the agent sector context took automation from **${pc(sans.tauxAutomatisation)}** to ` +
   `**${pc(avec.tauxAutomatisation)}**, wasted escalations from ${sans.escaladesInutiles} to ` +
   `${avec.escaladesInutiles}, and breaches from ${sans.manquements} to **${avec.manquements}**. ` +
@@ -77,7 +77,7 @@ const failures = (() => {
     `n=${r.n}.\n\n${counts}\n\n` +
     (breaches.length === 0
       ? "**No breach remains.** Every file that had to go to a human went to a human.\n\n" +
-        "The two worst remaining errors are wasted escalations — analyst time, not exposure:\n\n" + examples
+        "The two worst remaining errors are wasted escalations; analyst time, not exposure:\n\n" + examples
       : `The breach${breaches.length > 1 ? "es" : ""}, in full:\n\n` + examples);
 })();
 
@@ -96,7 +96,7 @@ const chosen = (() => {
     "decides the breaches": "**Decides breaches**, and the draws agree where",
     "decides, boundary under the noise": "**Decides breaches**; the boundary is under the noise",
     "costs analyst time only": "Costs analyst time only",
-    "dormant behind the reference table": "**Dormant** — inert here, decisive without the sector table",
+    "dormant behind the reference table": "**Dormant**: inert here, decisive without the sector table",
     "no effect": "No effect on either cost",
   };
   const t = table(
@@ -117,11 +117,11 @@ const chosen = (() => {
   const flous = bs.filter((b) => b.verdict === "decides, boundary under the noise").length;
   return `Measured over ${GRAINES.length} independent draws of 800 files. What no source says ` +
     `about each of them:\n\n` +
-    bs.map((b) => `- \`${b.reglage}\` — ${AVEU[b.reglage]}`).join("\n") +
+    bs.map((b) => `- \`${b.reglage}\`: ${AVEU[b.reglage]}`).join("\n") +
     `\n\n${t}\n\n` +
-    `† measured with the sector table removed — see the note below.\n\n` +
+    `† measured with the sector table removed. See the note below.\n\n` +
     `${solides} of ${bs.length} can be defended with this measurement. ${flous} cost breaches at the ` +
-    `far end of their range in every draw, and no draw agrees with the others on where that starts — ` +
+    `far end of their range in every draw, and no draw agrees with the others on where that starts: ` +
     `they matter, and this measurement cannot tell you where to set them.`;
 })();
 
@@ -130,12 +130,12 @@ const margin = (() => {
   return `The reference is used at **${(PRUDENCE * 100).toFixed(0)} %** of its stated values. ` +
     `That margin is derived from the largest overstatement in the table (+14 %, on crypto-assets): ` +
     `1 / 1.14 ≈ 0.88, rounded down. It is not chosen by looking at which value makes the results ` +
-    `look best — that would be fitting the answer.\n\n` +
+    `look best: that would be fitting the answer.\n\n` +
     `The sweep above then checked the derivation against outcomes, which is a different question. ` +
     `No draw loses a file anywhere below **${b.deManquements[1].toFixed(2)}**, and the value in use ` +
     `is ${PRUDENCE.toFixed(2)}. The derivation landed inside the safe band with ` +
     `${(b.deManquements[1] - PRUDENCE).toFixed(2)} to spare out of a range ` +
-    `${(PLAUSIBLE.prudence[1] - PLAUSIBLE.prudence[0]).toFixed(2)} wide — and that edge is one only ` +
+    `${(PLAUSIBLE.prudence[1] - PLAUSIBLE.prudence[0]).toFixed(2)} wide, and that edge is one only ` +
     `${b.accord} of ${GRAINES.length} draws can see, so the headroom is smaller than the resolution ` +
     `of the thing measuring it. Derived honestly is not the same as derived safely; only the first ` +
     `of those two was ever checked, and the second is closer than the derivation suggested.`;
@@ -163,7 +163,7 @@ const adversarial = (() => {
   );
   const through = r.filter((x) => !x.tenu);
   const detail = through.map((x) =>
-    `**${x.adverse.id}** — expected \`${x.adverse.attendu}\`, got \`${x.obtenu}\`.\n\n` +
+    `**${x.adverse.id}**: expected \`${x.adverse.attendu}\`, got \`${x.obtenu}\`.\n\n` +
     `> ${x.adverse.pourquoi.replace(/\s+/g, " ")}`).join("\n\n");
 
   return `${held} of ${r.length} held.\n\n${rows}\n\n` +
@@ -198,7 +198,7 @@ const baselines = table(
 const citations = table(
   ["Citation", "Requires", "Figure", "Retrieved"],
   CITED.map((r) => [
-    `[${r.cite}](${r.source})`, r.says, r.figure ?? "—", r.retrieved,
+    `[${r.cite}](${r.source})`, r.says, r.figure ?? "n/a", r.retrieved,
   ]),
 );
 

@@ -65,12 +65,12 @@ export const INVENTORY: Inventory = [
     name: "tauxAutomatisation",
     provenance: "measured",
     what: "share of files decided without a human",
-    note: "measured on the synthetic case set below — see `genererCas`",
+    note: "measured on the synthetic case set below; see `genererCas`",
   },
   {
     name: "manquements",
     provenance: "measured",
-    what: "files decided alone that had to go to a human — the costly error",
+    what: "files decided alone that had to go to a human, the costly error",
     note: "the error with a fine attached, counted separately from wasted analyst time",
   },
   {
@@ -123,7 +123,7 @@ export const INVENTORY: Inventory = [
     name: "volumeEleve",
     provenance: "chosen",
     what: "the flat ceiling used only where no sector reference exists",
-    note: "dormant with a complete table, decisive without one — not the same as irrelevant",
+    note: "dormant with a complete table, decisive without one; not the same as irrelevant",
   },
   {
     name: "multipleAnormal",
@@ -135,13 +135,13 @@ export const INVENTORY: Inventory = [
     name: "prudence",
     provenance: "chosen",
     what: "the margin taken against the reference table being wrong",
-    note: "derived from observed reference error, not from outcomes — and the headroom is thinner than the measurement's resolution",
+    note: "derived from observed reference error, not from outcomes, and the headroom is thinner than the measurement's resolution",
   },
   {
     name: "nettete",
     provenance: "chosen",
     what: "how sharp each rule's trigger is, from 0 to 1",
-    note: "the ordering is defensible — an unreadable document is fuzzier than an expired one; the values are mine",
+    note: "the ordering is defensible: an unreadable document is fuzzier than an expired one; the values are mine",
   },
   {
     name: "genererCas",

@@ -285,11 +285,11 @@ export function conseil(b: Bande): string {
     case "decides the breaches":
       return `Decides the expensive error, and ${b.accord} of ${GRAINES.length} draws agree on where. No draw changes its breach count between ${f(b.deManquements[0])} and ${f(b.deManquements[1])}. ${extremes} Worth arguing about.`;
     case "decides, boundary under the noise":
-      return `It costs breaches — ${b.accordExtreme} of ${GRAINES.length} draws lose files at the far end of the range. ${extremes} What this measurement cannot give you is *where* it starts costing: only ${b.accord} of ${GRAINES.length} draws see the edge near ${f(b.deManquements[1])}, so that number belongs to the sample. Set it on the cost, not on this edge.`;
+      return `It costs breaches: ${b.accordExtreme} of ${GRAINES.length} draws lose files at the far end of the range. ${extremes} What this measurement cannot give you is *where* it starts costing: only ${b.accord} of ${GRAINES.length} draws see the edge near ${f(b.deManquements[1])}, so that number belongs to the sample. Set it on the cost, not on this edge.`;
     case "costs analyst time only":
       return `No draw loses a file to it anywhere in ${f(bas)}–${f(haut)}; it buys and sells analyst time between ${f(b.dEscalades[0])} and ${f(b.dEscalades[1])}. An operational decision, not a compliance one.`;
     case "dormant behind the reference table":
-      return `Changes nothing here — but only because the sector reference covers every file. Take the table away and the same sweep runs ${b.auxExtremesSansTable[0].toFixed(1)} to ${b.auxExtremesSansTable[1].toFixed(1)} breaches per ${PAR_TIRAGE} files. Add one sector the table does not list and this constant decides those files. Worth setting before that happens, not after.`;
+      return `Changes nothing here, but only because the sector reference covers every file. Take the table away and the same sweep runs ${b.auxExtremesSansTable[0].toFixed(1)} to ${b.auxExtremesSansTable[1].toFixed(1)} breaches per ${PAR_TIRAGE} files. Add one sector the table does not list and this constant decides those files. Worth setting before that happens, not after.`;
     default:
       return `Changes nothing across ${f(bas)}–${f(haut)}, on either cost. Not worth defending in a review.`;
   }
@@ -347,7 +347,7 @@ if (isMain(import.meta)) {
 
   console.log("\nWhat no source says about them, and what to do with that\n");
   for (const b of resultats) {
-    console.log(`  ${b.reglage} — ${b.verdict}`);
+    console.log(`  ${b.reglage}: ${b.verdict}`);
     console.log(`    ${AVEU[b.reglage]}`);
     console.log(`    ${conseil(b)}\n`);
   }

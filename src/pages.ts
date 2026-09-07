@@ -96,9 +96,9 @@ window.LOCAL_POSE && window.LOCAL_POSE();
  * measurement of real onboarding.
  */
 const BANNER = `<p class="renvoi" style="margin-bottom:1.5rem">
-This runs entirely in your browser — no server, no data leaves your machine, and the review
+This runs entirely in your browser: no server, no data leaves your machine, and the review
 queue you build is yours alone. <b>Drag the threshold line</b> across the confidence
-distribution and watch what it moves — and what it never will. The 400 client files are
+distribution and watch what it moves, and what it never will. The 400 client files are
 <b>synthetic and seeded</b>; the regulations each decision cites are real and linked.
 <a href="https://github.com/ArslaneSempai-ui/kyc-triage-agent">Source and method</a>.
 </p>`;
@@ -124,7 +124,7 @@ export function build(): void {
   if (existsSync(root + "images")) cpSync(root + "images", docs + "/images", { recursive: true });
   writeFileSync(docs + "/.nojekyll", "");
 
-  console.log("docs/ built — commit it and enable GitHub Pages on the docs folder");
+  console.log("docs/ built: commit it and enable GitHub Pages on the docs folder");
 }
 
 if (isMain(import.meta)) build();
